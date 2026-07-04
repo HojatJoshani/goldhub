@@ -1,0 +1,481 @@
+// GoldHub - Prisma Schema
+// SaaS Platform for Gold & Jewelry Stores
+// Multi-tenant, Role-Based Access Control
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============ TENANT & AUTH ============
+
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  plan        String   @default("starter") // starter, pro, enterprise
+  status      String   @default("active") // active, suspended, cancelled
+  settings    String   @default("{}") // JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  branches    Branch[]
+  products    Product[]
+  categories  Category[]
+  customers   Customer[]
+  orders      CustomOrder[]
+  sales       Sale[]
+  invoices    Invoice[]
+  expenses    Expense[]
+  cashboxes   Cashbox[]
+  suppliers   Supplier[]
+  stockMoves  StockMovement[]
+  auditLogs   AuditLog[]
+  goldPrices  GoldPrice[]
+  alerts      Alert[]
+  aiQueries   AIQuery[]
+}
+
+model User {
+  id            String   @id @default(cuid())
+  tenantId      String
+  email         String   @unique
+  phone         String?
+  passwordHash  String
+  name          String
+  role          String   @default("staff") // super_admin, admin, manager, cashier, staff
+  status        String   @default("active") // active, inactive
+  avatar        String?
+  branchId      String?
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch        Branch?  @relation(fields: [branchId], references: [id])
+  sales         Sale[]
+  orders        CustomOrder[]
+  auditLogs     AuditLog[]
+  aiQueries     AIQuery[]
+  notifications Notification[]
+
+  @@index([tenantId])
+}
+
+model Branch {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  code        String
+  address     String?
+  phone       String?
+  isWarehouse Boolean  @default(false)
+  isMain      Boolean  @default(false)
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users       User[]
+  products    Product[]
+  stockMoves  StockMovement[] @relation("FromBranch")
+  stockMovesTo StockMovement[] @relation("ToBranch")
+  sales       Sale[]
+  cashboxes   Cashbox[]
+  transfers   Transfer[]  @relation("FromBranchTransfer")
+  transfersTo Transfer[]  @relation("ToBranchTransfer")
+
+  @@index([tenantId])
+}
+
+// ============ CATALOG ============
+
+model Category {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  slug        String
+  parentId    String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products    Product[]
+
+  @@index([tenantId])
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  tenantId      String
+  branchId      String?
+  categoryId    String?
+  sku           String   @unique
+  barcode       String?
+  name          String
+  description   String?
+  images        String   @default("[]") // JSON array
+  karat         String   @default("750") // 999, 916, 750, 585, 417
+  weight        Float    @default(0) // grams
+  makingCharge  Float    @default(0) // per gram or flat
+  makingType    String   @default("per_gram") // per_gram, flat, percent
+  stoneWeight   Float    @default(0)
+  stoneCost     Float    @default(0)
+  purchasePrice Float    @default(0)
+  salePrice     Float    @default(0)
+  costPrice     Float    @default(0)
+  stock         Int      @default(0)
+  minStock      Int      @default(0)
+  status        String   @default("active") // active, inactive, discontinued
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch        Branch?      @relation(fields: [branchId], references: [id])
+  category      Category?    @relation(fields: [categoryId], references: [id])
+  saleItems     SaleItem[]
+  stockMoves    StockMovement[]
+  orderItems    CustomOrderItem[]
+
+  @@index([tenantId])
+  @@index([sku])
+}
+
+model Supplier {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  contact     String?
+  phone       String?
+  email       String?
+  address     String?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+// ============ SALES / POS ============
+
+model Sale {
+  id            String   @id @default(cuid())
+  tenantId      String
+  branchId      String
+  invoiceNumber String   @unique
+  customerId    String?
+  cashierId     String
+  subtotal      Float    @default(0)
+  discount      Float    @default(0)
+  tax           Float    @default(0)
+  makingTotal   Float    @default(0)
+  total         Float    @default(0)
+  paymentMethod String   @default("cash") // cash, card, transfer, gold, mixed
+  paymentStatus String   @default("paid") // paid, partial, unpaid
+  status        String   @default("completed") // completed, refunded, void
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  tenant        Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch        Branch     @relation(fields: [branchId], references: [id])
+  customer      Customer?  @relation(fields: [customerId], references: [id])
+  cashier       User       @relation(fields: [cashierId], references: [id])
+  items         SaleItem[]
+
+  @@index([tenantId])
+  @@index([createdAt])
+}
+
+model SaleItem {
+  id          String   @id @default(cuid())
+  saleId      String
+  productId   String
+  name        String
+  karat       String
+  weight      Float
+  makingCharge Float
+  unitPrice   Float
+  quantity    Int      @default(1)
+  total       Float
+
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id])
+}
+
+// ============ INVENTORY MOVEMENTS ============
+
+model StockMovement {
+  id          String   @id @default(cuid())
+  tenantId    String
+  productId   String
+  fromBranchId String?
+  toBranchId   String?
+  type        String   // purchase, sale, transfer_in, transfer_out, adjustment, return
+  quantity    Int
+  reason      String?
+  refId       String?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id])
+  fromBranch  Branch?  @relation("FromBranch", fields: [fromBranchId], references: [id])
+  toBranch    Branch?  @relation("ToBranch", fields: [toBranchId], references: [id])
+
+  @@index([tenantId])
+}
+
+model Transfer {
+  id          String   @id @default(cuid())
+  tenantId    String
+  fromBranchId String
+  toBranchId   String
+  reference   String
+  status      String   @default("pending") // pending, in_transit, received, cancelled
+  itemsJson   String   @default("[]") // JSON array of {productId, name, qty}
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  fromBranch  Branch   @relation("FromBranchTransfer", fields: [fromBranchId], references: [id])
+  toBranch    Branch   @relation("ToBranchTransfer", fields: [toBranchId], references: [id])
+
+  @@index([tenantId])
+}
+
+// ============ CUSTOMERS ============
+
+model Customer {
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  phone         String?
+  email         String?
+  address       String?
+  birthday      DateTime?
+  nationalId    String?
+  loyaltyPoints Int      @default(0)
+  totalSpent    Float    @default(0)
+  totalOrders   Int      @default(0)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sales         Sale[]
+  orders        CustomOrder[]
+
+  @@index([tenantId])
+  @@index([phone])
+}
+
+// ============ CUSTOM ORDERS / REPAIRS ============
+
+model CustomOrder {
+  id            String   @id @default(cuid())
+  tenantId      String
+  orderNumber   String   @unique
+  customerId    String?
+  type          String   @default("custom") // custom, repair, manufacturing
+  title         String
+  description   String?
+  status        String   @default("pending") // pending, design, manufacturing, polishing, ready, delivered, cancelled
+  goldWeight    Float    @default(0)
+  karat         String   @default("750")
+  makingCharge  Float    @default(0)
+  stoneCost     Float    @default(0)
+  estimatedCost Float    @default(0)
+  finalCost     Float    @default(0)
+  assignedToId  String?
+  deadline      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer      Customer? @relation(fields: [customerId], references: [id])
+  assignedTo    User?    @relation(fields: [assignedToId], references: [id])
+  items         CustomOrderItem[]
+  timeline      OrderTimeline[]
+
+  @@index([tenantId])
+}
+
+model CustomOrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String?
+  name        String
+  quantity    Int      @default(1)
+  weight      Float    @default(0)
+  unitPrice   Float    @default(0)
+
+  order       CustomOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product?    @relation(fields: [productId], references: [id])
+}
+
+model OrderTimeline {
+  id          String   @id @default(cuid())
+  orderId     String
+  status      String
+  note        String?
+  createdAt   DateTime @default(now())
+
+  order       CustomOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// ============ ACCOUNTING ============
+
+model Cashbox {
+  id          String   @id @default(cuid())
+  tenantId    String
+  branchId    String
+  name        String
+  balance     Float    @default(0)
+  openedAt    DateTime?
+  closedAt    DateTime?
+  status      String   @default("open") // open, closed
+  openingBalance Float @default(0)
+  closingBalance Float @default(0)
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch      Branch   @relation(fields: [branchId], references: [id])
+  transactions CashboxTransaction[]
+
+  @@index([tenantId])
+}
+
+model CashboxTransaction {
+  id          String   @id @default(cuid())
+  cashboxId   String
+  type        String   // sale, expense, deposit, withdrawal, transfer
+  amount      Float
+  method      String   @default("cash") // cash, card, transfer
+  description String?
+  refId       String?
+  createdAt   DateTime @default(now())
+
+  cashbox     Cashbox  @relation(fields: [cashboxId], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  tenantId    String
+  branchId    String?
+  category    String   // rent, salary, utilities, supplies, marketing, other
+  description String
+  amount      Float
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  tenantId    String
+  number      String   @unique
+  saleId      String?
+  customerId  String?
+  type        String   @default("sale") // sale, purchase, proforma
+  total       Float
+  tax         Float    @default(0)
+  status      String   @default("issued") // issued, paid, cancelled
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+// ============ GOLD PRICES & ALERTS ============
+
+model GoldPrice {
+  id          String   @id @default(cuid())
+  tenantId    String
+  karat       String   // 999, 916, 750, 585, 417, 18k, 24k
+  pricePerGram Float
+  currency    String   @default("IRR")
+  source      String   @default("manual") // manual, api
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([createdAt])
+}
+
+model Alert {
+  id          String   @id @default(cuid())
+  tenantId    String
+  type        String   // low_stock, price_change, order_deadline, expense
+  severity    String   @default("info") // info, warning, critical
+  title       String
+  message     String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+// ============ NOTIFICATIONS ============
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  message     String
+  type        String   @default("info")
+  read        Boolean  @default(false)
+  link        String?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============ AUDIT LOGS ============
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  tenantId    String
+  userId      String?
+  action      String
+  entity      String
+  entityId    String?
+  details     String   @default("{}") // JSON
+  ip          String?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+}
+
+// ============ AI ============
+
+model AIQuery {
+  id          String   @id @default(cuid())
+  tenantId    String
+  userId      String?
+  type        String   // text_query, ocr_scan, image_recognition
+  input       String
+  output      String
+  meta        String   @default("{}") // JSON
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+}

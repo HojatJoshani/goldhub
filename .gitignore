@@ -1,2 +1,49 @@
-skills/
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Production
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment
+.env
+.env.local
+.env*.local
+
+# Database
+*.db
+*.db-journal
+db/*.db
+
+# Logs
+*.log
+dev.log
+server.log
+
+# Agent context
+agent-ctx/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+coverage/
+
+# Misc
+*.pem
+tool-results/
