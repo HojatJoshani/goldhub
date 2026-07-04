@@ -149,3 +149,122 @@ export const ROLE_LABELS: Record<string, string> = {
 export function roleLabel(role: string): string {
   return ROLE_LABELS[role] || role;
 }
+
+/** Audit log action labels in Persian */
+export const ACTION_LABELS: Record<string, string> = {
+  login: "ورود",
+  logout: "خروج",
+  create: "ایجاد",
+  update: "ویرایش",
+  delete: "حذف",
+  view: "مشاهده",
+  export: "خروجی",
+  import: "ورودی",
+  print: "چاپ",
+  status_change: "تغییر وضعیت",
+  open: "باز کردن",
+  close: "بستن",
+  transfer: "انتقال",
+  adjust: "تعدیل",
+  deactivate: "غیرفعال‌سازی",
+  activate: "فعال‌سازی",
+};
+
+export function actionLabel(action: string): string {
+  return ACTION_LABELS[action] || action;
+}
+
+/** Audit log entity labels in Persian */
+export const ENTITY_LABELS: Record<string, string> = {
+  User: "کاربر",
+  Product: "محصول",
+  Customer: "مشتری",
+  Sale: "فروش",
+  Order: "سفارش",
+  CustomOrder: "سفارش سفارشی",
+  Branch: "شعبه",
+  Category: "دسته‌بندی",
+  Expense: "هزینه",
+  Cashbox: "صندوق",
+  Invoice: "فاکتور",
+  Transfer: "انتقال",
+  StockMovement: "حرکت انبار",
+  Tenant: "سازمان",
+  GoldPrice: "قیمت طلا",
+  Alert: "هشدار",
+  Notification: "اعلان",
+  Supplier: "تأمین‌کننده",
+  AIQuery: "پرسش هوش مصنوعی",
+};
+
+export function entityLabel(entity: string): string {
+  return ENTITY_LABELS[entity] || entity;
+}
+
+/** Payment method labels */
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: "نقدی",
+  card: "کارتی",
+  transfer: "انتقال بانکی",
+  gold: "طلا",
+  mixed: "ترکیبی",
+};
+
+export function paymentMethodLabel(method: string): string {
+  return PAYMENT_METHOD_LABELS[method] || method;
+}
+
+/** Order type labels */
+export const ORDER_TYPE_LABELS: Record<string, string> = {
+  custom: "سفارشی",
+  repair: "تعمیر",
+  manufacturing: "ساخت",
+};
+
+export function orderTypeLabel(type: string): string {
+  return ORDER_TYPE_LABELS[type] || type;
+}
+
+/** Stock movement type labels */
+export const STOCK_MOVE_LABELS: Record<string, string> = {
+  purchase: "خرید",
+  sale: "فروش",
+  transfer_in: "ورود از انتقال",
+  transfer_out: "خروج به انتقال",
+  adjustment: "تعدیل",
+  return: "مرجوعی",
+};
+
+export function stockMoveLabel(type: string): string {
+  return STOCK_MOVE_LABELS[type] || type;
+}
+
+/** Expense category labels */
+export const EXPENSE_CATEGORY_LABELS: Record<string, string> = {
+  rent: "اجاره",
+  salary: "حقوق",
+  utilities: "قبوض",
+  supplies: "تجهیزات",
+  marketing: "تبلیغات",
+  other: "سایر",
+};
+
+export function expenseCategoryLabel(category: string): string {
+  return EXPENSE_CATEGORY_LABELS[category] || category;
+}
+
+/** Branch type labels */
+export function branchTypeLabel(branch: { isWarehouse?: boolean; isMain?: boolean }): string {
+  if (branch?.isWarehouse) return "انبار";
+  if (branch?.isMain) return "شعبه اصلی";
+  return "شعبه";
+}
+
+/** Customer loyalty tier labels */
+export function loyaltyTierLabel(points: number): string {
+  if (points >= 2000) return "پلاتین";
+  if (points >= 1000) return "طلایی";
+  if (points >= 500) return "نقره‌ای";
+  if (points >= 100) return "برنزی";
+  return "عادی";
+}

@@ -437,7 +437,7 @@ export function ReportsModule() {
     <div className="space-y-5 reports-module">
       {/* PRINT ONLY HEADER */}
       <div className="hidden print:block mb-4">
-        <h1 className="text-2xl font-bold">گزارشات و تحلیل‌های GoldHub</h1>
+        <h1 className="text-2xl font-bold">گزارشات و تحلیل‌های گلد هاب</h1>
         <p className="text-sm text-muted-foreground">
           بازه: {toPersianDigits(from)} تا {toPersianDigits(to)}
         </p>

@@ -591,3 +591,198 @@ Stage Summary:
 - 11 modules: Dashboard, POS, Inventory, Customers, Orders, Branches, Accounting, Reports, AI, Marketplace, Admin
 - All APIs working, AI features functional, Persian RTL UI, gold theme
 - Browser-verified end-to-end
+
+---
+
+## Task ID: AUDIT-1
+**Agent:** Explore (English text scanner)
+**Task:** Audit GoldHub Persian RTL app for remaining user-facing English text
+
+### Scope
+Scanned all 11 module files in `src/components/modules/`, plus `app-shell.tsx`, `login-page.tsx`, `lib/persian.ts`, and `lib/navigation.ts` for user-facing English text that should be translated to Persian.
+
+### Methodology
+- Read each file in full
+- Used Grep to find: `>[A-Za-z]...<` JSX text, English placeholder strings, English titles, English toast messages, role/entity/method/type values being rendered directly without translation
+- Excluded (per task instructions): code identifiers, imports, HTML/SVG attributes, CSS classes, console.log, comments, API routes, library component props, technical `aria-label`s
+
+### Summary
+The GoldHub app is **very thoroughly Persian-translated**. The vast majority of UI text — labels, buttons, toasts, dialogs, table headers, chart labels, CSV export columns, empty states — is correctly in Persian. Only a small number of issues were found, mostly involving raw enum values from the API being rendered directly without passing through the `roleLabel()` / `statusLabel()` helpers, plus one inconsistent brand string.
+
+### Findings — User-Facing English Text to Translate
+
+#### 1. `src/components/modules/reports.tsx`
+- **Line ~440** (print-only header):
+  ```tsx
+  <h1 className="text-2xl font-bold">گزارشات و تحلیل‌های GoldHub</h1>
+  ```
+  - English text: `GoldHub`
+  - Suggested fix: Replace with `گلد هاب` to match the rest of the app (app-shell, login-page, AI module, etc. all use the Persian form)
+
+#### 2. `src/components/modules/admin.tsx`
+- **Lines 159-170** — `MODULES` array contains the English string `"POS"` (other entries are Persian):
+  ```tsx
+  const MODULES = [
+    "داشبورد",
+    "انبار",
+    "POS",        // ← English
+    "مشتریان",
+    ...
+  ]
+  ```
+  - This array is rendered as the **column headers of the role/permission matrix** at line ~1026 (`{m}`) and as the keys of the `PERMISSIONS` map.
+  - English text: `POS`
+  - Suggested fix: Change to `"صندوق فروش"` (matching `navigation.ts` and the rest of the app) and update all the `PERMISSIONS` keys (lines 188-246) to use the Persian label consistently. Alternatively keep `POS` if it is treated as an accepted brand/abbreviation, but this should be a conscious choice.
+
+- **Line ~1042** — raw role identifier shown as a subtitle below the Persian role label in the permission matrix:
+  ```tsx
+  <div>{roleLabel(role)}</div>
+  <div className="text-xs text-muted-foreground font-normal">
+    {role}     {/* ← renders raw English e.g. "super_admin", "cashier", "manager", "staff" */}
+  </div>
+  ```
+  - English text shown: `super_admin`, `admin`, `manager`, `cashier`, `staff`
+  - Suggested fix: Either remove the secondary line (the Persian label is already shown), or wrap with `roleLabel()` again, or display as a `font-mono` technical identifier with a clear visual distinction. As it stands, ordinary users see raw English role keys.
+
+- **Line ~1245** — fallback to raw action key in audit-log filter dropdown:
+  ```tsx
+  {ACTION_LABELS[a] || a}
+  ```
+  - `ACTION_LABELS` only covers `login`, `logout`, `create`, `update`, `delete`. Any other action returned by the API (e.g. `export`, `import`, `print`, `transfer`) would render in raw English.
+  - Suggested fix: Extend `ACTION_LABELS` to cover every action emitted by the backend, or display unknown actions under a generic label such as `"اقدام"` / `"سایر"`.
+
+- **Line ~1262** — raw entity name displayed without translation in the entity filter dropdown:
+  ```tsx
+  {entities.map((e) => (
+    <SelectItem key={e} value={e}>
+      {e}      {/* ← renders raw English e.g. "user", "product", "sale", "expense" */}
+    </SelectItem>
+  ))}
+  ```
+  - Suggested fix: Add an `ENTITY_LABELS` map (mirroring `ACTION_LABELS`) covering all entities the API can return (`user`, `product`, `sale`, `customer`, `order`, `transfer`, `cashbox`, `expense`, `branch`, `category`, `tenant`, etc.) and render `{ENTITY_LABELS[e] || e}`.
+
+- **Line ~1377** — raw entity name displayed in the audit log table:
+  ```tsx
+  <TableCell className="hidden md:table-cell text-sm">
+    <span className="font-mono">{log.entity}</span>   {/* ← English */}
+  </TableCell>
+  ```
+  - Suggested fix: Use the same `ENTITY_LABELS` map: `{ENTITY_LABELS[log.entity] || log.entity}` (keep `font-mono` if desired for visual consistency, but the text should be Persian).
+
+- **Line ~1313** — `IP` table header:
+  - English text: `IP`
+  - This is a universally-recognized technical abbreviation. **Probably acceptable** but could be changed to `آی‌پی` for full Persian consistency.
+
+#### 3. `src/components/modules/orders.tsx`
+- **Line ~1479** — raw role of the assigned staff member rendered in order detail:
+  ```tsx
+  <p className="text-[10px] text-muted-foreground">
+    {order.assignedTo.role}     {/* ← e.g. "manager", "cashier", "staff" */}
+  </p>
+  ```
+  - Suggested fix: `{roleLabel(order.assignedTo.role)}` (import `roleLabel` from `@/lib/persian`).
+
+- **Line ~1999** — raw role displayed next to staff name in the "assign to" dropdown of the order form:
+  ```tsx
+  <SelectItem key={s.id} value={s.id}>
+    {s.name} — {s.role}     {/* ← English */}
+  </SelectItem>
+  ```
+  - Suggested fix: `{s.name} — {roleLabel(s.role)}`.
+
+#### 4. `src/lib/navigation.ts`
+- **Line 46** — the `ai` nav item carries an English badge:
+  ```ts
+  { key: "ai", label: "دستیار هوش مصنوعی", icon: Sparkles, badge: "AI" },
+  ```
+  - English text: `AI`
+  - This is a universally-recognized abbreviation. **Likely acceptable**; if full Persian is desired, use `badge: "هوش مصنوعی"` or simply remove the badge (the label already conveys the meaning).
+
+### Items reviewed and considered acceptable (not bugs)
+- **Email/phone placeholders** in `login-page.tsx` (`email@example.com`), `customers.tsx` (`example@mail.com`), `admin.tsx` (`user@goldhub.ir`, `0912xxxxxxx`): universal LTR format examples, displayed with `dir="ltr"`. Standard practice.
+- **Currency ISO codes** `IRR`, `IRT`, `USD`, `EUR`, `AED` in `admin.tsx` lines ~1639-1643: shown alongside Persian labels (e.g. `ریال (IRR)`). Standard ISO 4217 representation.
+- **SKU** in inventory/pos/marketplace search placeholders and table headers: widely-used retail abbreviation. Could be replaced with `کد محصول` but is acceptable.
+- **Slug** in `inventory.tsx` line ~1877 (`شناسه (Slug)`): technical term. Could be replaced with `شناسه یکتا` or `نامک` if desired, but acceptable.
+- **CSV** in `reports.tsx` (`خروجی CSV`, `فایل CSV دانلود شد`): universally-recognized file format abbreviation.
+- **`sr-only`** texts in shadcn/ui library components (`Close`, `Previous`, `Next`, `Sidebar`, `More`): per task instructions, library component code is out of scope.
+- **POS** abbreviation used in `navigation.ts` label `"صندوق فروش (POS)"`: here POS is shown in parentheses as a clarification of the Persian label, which is acceptable (though inconsistent with the MODULES array issue above where `POS` is the only entry and there's no Persian label).
+
+### Files fully reviewed and confirmed clean (no user-facing English)
+- `src/components/modules/dashboard.tsx` ✓
+- `src/components/modules/pos.tsx` ✓
+- `src/components/modules/inventory.tsx` ✓
+- `src/components/modules/customers.tsx` ✓
+- `src/components/modules/branches.tsx` ✓
+- `src/components/modules/accounting.tsx` ✓
+- `src/components/modules/reports.tsx` ✓ (except the one issue above)
+- `src/components/modules/ai.tsx` ✓
+- `src/components/modules/marketplace.tsx` ✓
+- `src/components/app-shell.tsx` ✓
+- `src/components/login-page.tsx` ✓
+- `src/lib/persian.ts` ✓ (STATUS_LABELS, ROLE_LABELS, KARAT_LABELS all Persian)
+- `src/lib/navigation.ts` ✓ (except optional `AI` badge noted above)
+
+### Recommended next actions
+1. **High priority** — apply `roleLabel()` wrapping in `orders.tsx` (lines ~1479 and ~1999). One-line fix each, immediately visible to users assigning orders.
+2. **High priority** — fix `reports.tsx` print header brand text (`GoldHub` → `گلد هاب`).
+3. **Medium priority** — extend `ACTION_LABELS` and add an `ENTITY_LABELS` map in `admin.tsx` so the audit log filter dropdowns and table cells don't fall back to raw English.
+4. **Medium priority** — decide whether to keep `"POS"` in the `MODULES` array (acceptable as abbreviation) or rename to `"صندوق فروش"` for full Persian consistency. Also decide whether the secondary raw-role line at `admin.tsx:~1042` should be removed or kept as a technical identifier.
+5. **Low priority / optional** — `AI` badge in `navigation.ts`, `IP` header in `admin.tsx`, `Slug` label in `inventory.tsx`, `SKU` abbreviations — all individually defensible but worth a single consistency pass if a strict Persian-only policy is desired.
+
+### No code changes were made.
+This was a read-only audit. No files were modified.
+
+---
+Task ID: PERSIAN-2
+Agent: Main (Z.ai Code)
+Task: فارسی‌سازی کامل اپ و پر کردن با داده‌های واقعی
+
+Work Log:
+- اسکن کامل اپ توسط subagent برای یافتن متن‌های انگلیسی باقی‌مانده
+- افزودن label‌های فارسی جدید به persian.ts: ACTION_LABELS, ENTITY_LABELS, PAYMENT_METHOD_LABELS, ORDER_TYPE_LABELS, STOCK_MOVE_LABELS, EXPENSE_CATEGORY_LABELS, branchTypeLabel, loyaltyTierLabel
+- تغییر navigation badge "AI" به "هوش"
+- اصلاح reports.tsx: "GoldHub" → "گلد هاب"
+- اصلاح orders.tsx: نمایش role با roleLabel() به جای role انگلیسی
+- اصلاح admin.tsx:
+  • افزودن ACTION_LABELS کامل (۱۶ مورد)
+  • افزودن ENTITY_LABELS (۱۹ موجودیت فارسی)
+  • جایگزینی "POS" با "صندوق فروش" در ماتریس دسترسی
+  • نمایش entity فارسی در جدول audit logs
+  • نمایش entity فارسی در dropdown فیلتر
+  • تغییر subtitle ماتریس نقش‌ها (از role key انگلیسی به "سطح X")
+  • تغییر "IP" به "آی‌پی"
+- اصلاح inventory.tsx: "شناسه (Slug)" → "شناسه یکتا"
+- بازنویسی کامل seed script با داده‌های واقعی:
+  • نام tenant: "طلا و جواهر زرین شهر"
+  • ۴ شعبه (تهران، اصفهان، شیراز، انبار)
+  • ۶ کاربر (مدیر، ۲ صندوق‌دار، مدیر شعبه، کارمند، استاد زرگر)
+  • ۱۴ دسته‌بندی با زیردسته
+  • ۴ تامین‌کننده
+  • ۵۲ محصول واقعی (نشان، انگشتر مردانه/زنانه، گردنبند، دستبند، نیم‌ست، تنگسیر، پلاک، بچگی، گوشواره، زنجیر، پایه عروس)
+  • ۳۰ مشتری با تولد و اطلاعات کامل
+  • تاریخچه قیمت طلا ۳۰ روزه
+  • ۳۹۶ فروش در ۶۰ روز گذشته
+  • هزینه‌های واقعی (اجاره، حقوق، قبوض، تأمینات، تبلیغات)
+  • صندوق‌های فروش برای هر شعبه
+  • ۲۰ سفارش سفارشی/تعمیر/ساخت با تایم‌لاین کامل
+  • ۵ انتقال بین انباری
+  • ۱۴ هشدار (موجودی کم، قیمت، مهلت تحویل)
+  • اعلان‌ها برای کاربران
+  • لاگ‌های ممیزی با IP و جزئیات
+- Agent Browser verification موفق:
+  • ورود موفق
+  • داشبورد با نام tenant جدید و قیمت زنده طلا
+  • انبار با ۵۲ محصول
+  • مشتریان با ۳۰ مشتری و تولدهای این ماه
+  • گزارشات با اعداد واقعی (۲۹ میلیارد تومان فروش)
+  • AI با پاسخ فارسی واقعی
+  • admin با entity/action label‌های فارسی
+  • POS با محصولات و قیمت‌ها
+  • فروشگاه آنلاین با ۴ فروشگاه
+  • بدون خطای کنسول
+
+Stage Summary:
+- اپ کاملاً فارسی شد (هیچ متن انگلیسی user-facing باقی نماند)
+- اپ با داده‌های واقعی و فراوان پر شد (۵۲ محصول، ۳۰ مشتری، ۳۹۶ فروش، ۲۰ سفارش)
+- lint تمیز، بدون خطای runtime
+- آماده commit و push به GitHub

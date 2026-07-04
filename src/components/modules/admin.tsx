@@ -159,7 +159,7 @@ interface TenantInfo {
 const MODULES = [
   "داشبورد",
   "انبار",
-  "POS",
+  "صندوق فروش",
   "مشتریان",
   "سفارشات",
   "شعبات",
@@ -187,7 +187,7 @@ const PERMISSIONS: Record<
   super_admin: {
     "داشبورد": true,
     "انبار": true,
-    "POS": true,
+    "صندوق فروش": true,
     "مشتریان": true,
     "سفارشات": true,
     "شعبات": true,
@@ -199,7 +199,7 @@ const PERMISSIONS: Record<
   admin: {
     "داشبورد": true,
     "انبار": true,
-    "POS": true,
+    "صندوق فروش": true,
     "مشتریان": true,
     "سفارشات": true,
     "شعبات": true,
@@ -211,7 +211,7 @@ const PERMISSIONS: Record<
   manager: {
     "داشبورد": true,
     "انبار": true,
-    "POS": true,
+    "صندوق فروش": true,
     "مشتریان": true,
     "سفارشات": true,
     "شعبات": "partial",
@@ -223,7 +223,7 @@ const PERMISSIONS: Record<
   cashier: {
     "داشبورد": "partial",
     "انبار": "partial",
-    "POS": true,
+    "صندوق فروش": true,
     "مشتریان": true,
     "سفارشات": "partial",
     "شعبات": false,
@@ -235,7 +235,7 @@ const PERMISSIONS: Record<
   staff: {
     "داشبورد": "partial",
     "انبار": "partial",
-    "POS": false,
+    "صندوق فروش": false,
     "مشتریان": "partial",
     "سفارشات": "partial",
     "شعبات": false,
@@ -276,6 +276,39 @@ const ACTION_LABELS: Record<string, string> = {
   create: "ایجاد",
   update: "ویرایش",
   delete: "حذف",
+  view: "مشاهده",
+  export: "خروجی",
+  import: "ورودی",
+  print: "چاپ",
+  status_change: "تغییر وضعیت",
+  open: "باز کردن",
+  close: "بستن",
+  transfer: "انتقال",
+  adjust: "تعدیل",
+  deactivate: "غیرفعال‌سازی",
+  activate: "فعال‌سازی",
+};
+
+const ENTITY_LABELS: Record<string, string> = {
+  User: "کاربر",
+  Product: "محصول",
+  Customer: "مشتری",
+  Sale: "فروش",
+  Order: "سفارش",
+  CustomOrder: "سفارش سفارشی",
+  Branch: "شعبه",
+  Category: "دسته‌بندی",
+  Expense: "هزینه",
+  Cashbox: "صندوق",
+  Invoice: "فاکتور",
+  Transfer: "انتقال",
+  StockMovement: "حرکت انبار",
+  Tenant: "سازمان",
+  GoldPrice: "قیمت طلا",
+  Alert: "هشدار",
+  Notification: "اعلان",
+  Supplier: "تأمین‌کننده",
+  AIQuery: "پرسش هوش مصنوعی",
 };
 
 const ACTION_BADGE_CLASS: Record<string, string> = {
@@ -1039,7 +1072,7 @@ function RolesTab() {
                           <div>
                             <div>{roleLabel(role)}</div>
                             <div className="text-xs text-muted-foreground font-normal">
-                              {role}
+                              {toPersianDigits(ROLE_ORDER.indexOf(role as typeof ROLE_ORDER[number]) + 1)} · سطح {toPersianDigits(5 - ROLE_ORDER.indexOf(role as typeof ROLE_ORDER[number]))}
                             </div>
                           </div>
                         </div>
@@ -1259,7 +1292,7 @@ function AuditLogsTab() {
               <SelectItem value="all">همه موجودیت‌ها</SelectItem>
               {entities.map((e) => (
                 <SelectItem key={e} value={e}>
-                  {e}
+                  {ENTITY_LABELS[e] || e}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1310,7 +1343,7 @@ function AuditLogsTab() {
                   </TableHead>
                   <TableHead className="text-right">جزئیات</TableHead>
                   <TableHead className="text-right hidden lg:table-cell">
-                    IP
+                    آی‌پی
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -1374,7 +1407,7 @@ function AuditLogsTab() {
                             <ActionBadge action={log.action} />
                           </TableCell>
                           <TableCell className="hidden md:table-cell text-sm">
-                            <span className="font-mono">{log.entity}</span>
+                            <span>{ENTITY_LABELS[log.entity] || log.entity}</span>
                           </TableCell>
                           <TableCell>
                             <Button

@@ -1874,7 +1874,7 @@ function CategoriesTab() {
               <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur z-10">
                 <TableRow>
                   <TableHead className="text-right">نام</TableHead>
-                  <TableHead className="text-right">شناسه (Slug)</TableHead>
+                  <TableHead className="text-right">شناسه یکتا</TableHead>
                   <TableHead className="text-right">توضیحات</TableHead>
                   <TableHead className="text-right">تعداد محصولات</TableHead>
                 </TableRow>

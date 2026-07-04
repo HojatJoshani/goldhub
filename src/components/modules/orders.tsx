@@ -92,6 +92,7 @@ import {
   formatRelativeTime,
   karatLabel,
   KARAT_LABELS,
+  roleLabel,
 } from "@/lib/persian";
 
 // ===================== Types =====================
@@ -1476,7 +1477,7 @@ function OrderDetailContent({
             </p>
             {order.assignedTo && (
               <p className="text-[10px] text-muted-foreground">
-                {order.assignedTo.role}
+                {roleLabel(order.assignedTo.role)}
               </p>
             )}
           </div>
@@ -1996,7 +1997,7 @@ function OrderForm({
               <SelectItem value="">تعیین نشده</SelectItem>
               {staff.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
-                  {s.name} — {s.role}
+                  {s.name} — {roleLabel(s.role)}
                 </SelectItem>
               ))}
             </SelectContent>

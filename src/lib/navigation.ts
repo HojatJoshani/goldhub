@@ -43,7 +43,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "branches", label: "شعبات و انبار", icon: Building2 },
   { key: "accounting", label: "حسابداری", icon: Calculator },
   { key: "reports", label: "گزارشات", icon: BarChart3 },
-  { key: "ai", label: "دستیار هوش مصنوعی", icon: Sparkles, badge: "AI" },
+  { key: "ai", label: "دستیار هوش مصنوعی", icon: Sparkles, badge: "هوش" },
   { key: "marketplace", label: "فروشگاه آنلاین", icon: Store },
   { key: "admin", label: "مدیریت سیستم", icon: Settings },
 ];
