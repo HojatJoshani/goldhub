@@ -179,21 +179,24 @@ export function AiModule() {
       </div>
 
       <Tabs defaultValue="chat" className="w-full">
-        <TabsList className="h-auto flex-wrap bg-muted/60 p-1">
-          <TabsTrigger value="chat" className="gap-1.5">
-            <MessageSquare className="h-4 w-4" />
-            دستیار هوشمند
+        <TabsList className="h-auto w-full justify-start overflow-x-auto scrollbar-hide bg-muted/60 p-1 sm:w-auto sm:overflow-visible">
+          <TabsTrigger value="chat" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+            <MessageSquare className="h-4 w-4 shrink-0" />
+            <span className="hidden xs:inline">دستیار هوشمند</span>
+            <span className="xs:hidden">دستیار</span>
           </TabsTrigger>
-          <TabsTrigger value="ocr" className="gap-1.5">
-            <ScanLine className="h-4 w-4" />
-            اسکن فاکتور
+          <TabsTrigger value="ocr" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+            <ScanLine className="h-4 w-4 shrink-0" />
+            <span className="hidden xs:inline">اسکن فاکتور</span>
+            <span className="xs:hidden">اسکن</span>
           </TabsTrigger>
-          <TabsTrigger value="recognize" className="gap-1.5">
-            <Camera className="h-4 w-4" />
-            تشخیص محصول
+          <TabsTrigger value="recognize" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+            <Camera className="h-4 w-4 shrink-0" />
+            <span className="hidden xs:inline">تشخیص محصول</span>
+            <span className="xs:hidden">تشخیص</span>
           </TabsTrigger>
-          <TabsTrigger value="history" className="gap-1.5">
-            <History className="h-4 w-4" />
+          <TabsTrigger value="history" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+            <History className="h-4 w-4 shrink-0" />
             تاریخچه
           </TabsTrigger>
         </TabsList>
@@ -322,10 +325,7 @@ function ChatTab() {
       <CardContent className="p-0">
         <div
           ref={scrollRef}
-          className="h-[440px] overflow-y-auto px-4 py-4 bg-muted/30"
-          style={{
-            scrollbarWidth: "thin",
-          }}
+          className="h-[55vh] max-h-[520px] min-h-[320px] overflow-y-auto px-3 py-3 sm:px-4 sm:py-4 bg-muted/30 scrollbar-thin"
         >
           {messages.length === 0 ? (
             <EmptyChat onPick={sendQuestion} />
@@ -339,7 +339,7 @@ function ChatTab() {
         </div>
 
         {/* Suggested chips */}
-        <div className="border-t bg-card px-4 pt-3">
+        <div className="border-t bg-card px-3 pt-3 sm:px-4">
           <div className="flex flex-wrap gap-2">
             {SUGGESTED_QUESTIONS.map((q) => (
               <button
@@ -349,7 +349,7 @@ function ChatTab() {
                 onClick={() => sendQuestion(q)}
                 className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs text-amber-800 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/60"
               >
-                <Sparkles className="h-3 w-3" />
+                <Sparkles className="h-3 w-3 shrink-0" />
                 {q}
               </button>
             ))}
@@ -359,7 +359,7 @@ function ChatTab() {
         {/* Input */}
         <form
           onSubmit={handleSubmit}
-          className="flex items-end gap-2 border-t bg-card p-4"
+          className="sticky bottom-0 flex items-end gap-2 border-t bg-card p-3 sm:p-4 safe-bottom"
         >
           <Textarea
             ref={inputRef}
@@ -374,7 +374,7 @@ function ChatTab() {
             placeholder="سوال خود را بنویسید... (Enter برای ارسال)"
             rows={2}
             disabled={loading}
-            className="resize-none bg-background"
+            className="resize-none bg-background min-h-[44px]"
           />
           <Button
             type="submit"
@@ -465,7 +465,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
         ) : (
           <div
             className={
-              "[&_p]:my-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pr-4 " +
+              "min-w-0 [&_p]:my-1.5 [&_p]:break-words [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pr-4 " +
               "[&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pr-4 " +
               "[&_li]:my-0.5 [&_strong]:font-bold " +
               "[&_h1]:mb-1 [&_h1]:mt-2 [&_h1]:text-base [&_h1]:font-bold " +
@@ -475,9 +475,9 @@ function ChatBubble({ message }: { message: ChatMessage }) {
               "[&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-muted [&_pre]:p-2 [&_pre]:text-xs " +
               "[&_blockquote]:border-r-2 [&_blockquote]:border-amber-400 [&_blockquote]:pr-2 [&_blockquote]:text-muted-foreground " +
               "[&_a]:text-amber-600 [&_a]:underline dark:[&_a]:text-amber-400 " +
-              "[&_table]:my-2 [&_table]:w-full [&_table]:border-collapse " +
-              "[&_th]:border [&_th]:p-1 [&_th]:text-xs " +
-              "[&_td]:border [&_td]:p-1 [&_td]:text-xs"
+              "[&_table]:my-2 [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto [&_table]:border-collapse " +
+              "[&_th]:border [&_th]:p-1 [&_th]:text-xs [&_th]:whitespace-nowrap " +
+              "[&_td]:border [&_td]:p-1 [&_td]:text-xs [&_td]:align-top"
             }
           >
             <ReactMarkdown>{message.content}</ReactMarkdown>
@@ -592,7 +592,7 @@ function OcrTab() {
                 if (f) handleFile(f);
               }}
               className={cn(
-                "flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-10 text-center transition-colors",
+                "flex w-full min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-6 text-center transition-colors sm:p-10",
                 dragOver
                   ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30"
                   : "border-muted-foreground/30 hover:border-amber-400 hover:bg-muted/40"
@@ -617,7 +617,7 @@ function OcrTab() {
                   className="max-h-72 w-full object-contain"
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   onClick={handleScan}
                   disabled={loading}
@@ -691,7 +691,7 @@ function InvoiceResult({ data }: { data: InvoiceData }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <InfoTile
           icon={<Store className="h-4 w-4" />}
           label="فروشنده"
@@ -705,14 +705,14 @@ function InvoiceResult({ data }: { data: InvoiceData }) {
       </div>
 
       {items.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-lg border scrollbar-thin">
+          <table className="w-full min-w-[480px] text-sm">
             <thead className="bg-muted/60 text-xs">
               <tr>
-                <th className="p-2 text-right font-medium">کالا</th>
-                <th className="p-2 text-center font-medium">تعداد</th>
-                <th className="p-2 text-left font-medium">قیمت واحد</th>
-                <th className="p-2 text-left font-medium">مجموع</th>
+                <th className="p-2 text-right font-medium whitespace-nowrap">کالا</th>
+                <th className="p-2 text-center font-medium whitespace-nowrap">تعداد</th>
+                <th className="p-2 text-left font-medium whitespace-nowrap">قیمت واحد</th>
+                <th className="p-2 text-left font-medium whitespace-nowrap">مجموع</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -724,10 +724,10 @@ function InvoiceResult({ data }: { data: InvoiceData }) {
                       ? toPersianDigits(it.quantity)
                       : "—"}
                   </td>
-                  <td className="p-2 text-left font-mono text-xs">
+                  <td className="p-2 text-left font-mono text-xs ltr-num">
                     {it.unitPrice != null ? formatToman(it.unitPrice) : "—"}
                   </td>
-                  <td className="p-2 text-left font-mono text-xs">
+                  <td className="p-2 text-left font-mono text-xs ltr-num">
                     {it.total != null ? formatToman(it.total) : "—"}
                   </td>
                 </tr>
@@ -898,7 +898,7 @@ function RecognizeTab() {
                 if (f) handleFile(f);
               }}
               className={cn(
-                "flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-10 text-center transition-colors",
+                "flex w-full min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-6 text-center transition-colors sm:p-10",
                 dragOver
                   ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30"
                   : "border-muted-foreground/30 hover:border-amber-400 hover:bg-muted/40"
@@ -923,7 +923,7 @@ function RecognizeTab() {
                   className="max-h-72 w-full object-contain"
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   onClick={handleAnalyze}
                   disabled={loading}
@@ -1006,7 +1006,7 @@ function RecognitionResult({ data }: { data: RecognitionData }) {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
         <AttrCard
           label="نوع محصول"
           value={data.type || "—"}
@@ -1181,7 +1181,7 @@ function HistoryTab() {
             <p className="text-sm">هنوز درخواستی ثبت نشده است.</p>
           </div>
         ) : (
-          <ScrollArea className="max-h-[600px] pr-2">
+          <ScrollArea className="max-h-[70vh] sm:max-h-[600px] pr-2">
             <div className="space-y-2">
               {items.map((it) => {
                 const badge = TYPE_BADGE[it.type] || TYPE_BADGE.text_query;

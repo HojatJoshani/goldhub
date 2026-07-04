@@ -478,19 +478,19 @@ function ProductCard({
       <button
         onClick={onToggleWishlist}
         className={cn(
-          "absolute top-2 left-2 z-20 size-8 rounded-full bg-white/90 backdrop-blur shadow flex items-center justify-center transition-colors hover:bg-white",
+          "absolute top-1.5 left-1.5 sm:top-2 sm:left-2 z-20 size-7 sm:size-8 rounded-full bg-white/90 backdrop-blur shadow flex items-center justify-center transition-colors hover:bg-white",
           isWishlisted ? "text-rose-500" : "text-muted-foreground"
         )}
         aria-label="افزودن به علاقه‌مندی"
       >
         <Heart
-          className={cn("w-4 h-4", isWishlisted && "fill-rose-500")}
+          className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isWishlisted && "fill-rose-500")}
         />
       </button>
 
       {/* Karat badge */}
-      <div className="absolute top-2 right-2 z-20">
-        <Badge className="bg-amber-500/95 text-white text-[10px] font-bold shadow">
+      <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-20">
+        <Badge className="bg-amber-500/95 text-white text-[9px] sm:text-[10px] font-bold shadow">
           {karatLabel(product.karat)}
         </Badge>
       </div>
@@ -504,21 +504,21 @@ function ProductCard({
         <ProductImage
           product={product}
           className="aspect-square w-full"
-          iconSize="w-14 h-14"
+          iconSize="w-10 h-10 sm:w-14 sm:h-14"
         />
         {/* Hover overlay */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-end justify-center pb-3">
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 text-foreground text-xs font-medium px-3 py-1.5 rounded-full shadow flex items-center gap-1.5">
-            <Search className="w-3.5 h-3.5" />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-end justify-center pb-2 sm:pb-3">
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 text-foreground text-[10px] sm:text-xs font-medium px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow flex items-center gap-1.5">
+            <Search className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
             نمایش سریع
           </span>
         </div>
         {/* Stock indicator */}
         {lowStock && (
-          <div className="absolute bottom-2 right-2 z-10">
+          <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 z-10">
             <Badge
               variant="destructive"
-              className="text-[10px] bg-rose-500/90"
+              className="text-[9px] sm:text-[10px] bg-rose-500/90"
             >
               موجودی محدود
             </Badge>
@@ -526,11 +526,11 @@ function ProductCard({
         )}
       </button>
 
-      <CardContent className="p-3 space-y-2">
+      <CardContent className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
         {/* Branch */}
         {product.branch && (
-          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Store className="w-3 h-3" />
+          <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-muted-foreground">
+            <Store className="w-3 h-3 shrink-0" />
             <span className="truncate">{product.branch.name}</span>
           </div>
         )}
@@ -540,7 +540,7 @@ function ProductCard({
           onClick={onQuickView}
           className="block w-full text-right"
         >
-          <h3 className="font-semibold text-sm leading-snug line-clamp-2 group-hover:text-amber-700 transition-colors min-h-[2.5rem]">
+          <h3 className="font-semibold text-xs sm:text-sm leading-snug line-clamp-2 group-hover:text-amber-700 transition-colors min-h-[2.25rem] sm:min-h-[2.5rem]">
             {product.name}
           </h3>
         </button>
@@ -554,8 +554,8 @@ function ProductCard({
         />
 
         {/* Weight */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Gem className="w-3 h-3 text-amber-600" />
+        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
+          <Gem className="w-3 h-3 text-amber-600 shrink-0" />
           {formatWeight(product.weight)}
           {product.category && (
             <>
@@ -568,20 +568,20 @@ function ProductCard({
         <Separator />
 
         {/* Price + add to cart */}
-        <div className="flex items-end justify-between gap-2 pt-1">
+        <div className="flex items-end justify-between gap-2 pt-0.5 sm:pt-1">
           <div className="min-w-0">
-            <div className="text-[10px] text-muted-foreground">قیمت</div>
-            <div className="text-sm font-bold text-amber-700 leading-tight">
+            <div className="text-[9px] sm:text-[10px] text-muted-foreground">قیمت</div>
+            <div className="text-xs sm:text-sm font-bold text-amber-700 leading-tight">
               {formatToman(product.salePrice)}
             </div>
           </div>
           <Button
             size="sm"
             onClick={onAddToCart}
-            className="bg-amber-500 hover:bg-amber-600 text-white h-8 shrink-0"
+            className="bg-amber-500 hover:bg-amber-600 text-white h-7 sm:h-8 shrink-0 px-2 sm:px-3"
           >
-            <ShoppingCart className="w-3.5 h-3.5" />
-            افزودن
+            <ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <span className="text-[10px] sm:text-xs">افزودن</span>
           </Button>
         </div>
       </CardContent>
@@ -604,7 +604,7 @@ function QuickViewContent({
   const lowStock = product.stock <= product.minStock;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 max-h-[85vh] overflow-y-auto custom-scrollbar">
+    <div className="grid grid-cols-1 md:grid-cols-2 max-h-[85vh] overflow-y-auto scrollbar-thin">
       {/* Image side */}
       <div className="relative bg-muted">
         <ProductImage
@@ -625,7 +625,7 @@ function QuickViewContent({
       </div>
 
       {/* Details side */}
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <DialogHeader className="text-right">
           {product.branch && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
@@ -718,8 +718,8 @@ function QuickViewContent({
         </div>
 
         {/* Quantity + add to cart */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-lg border bg-background px-2 py-1.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex items-center gap-2 rounded-lg border bg-background px-2 py-1.5 self-start sm:self-auto">
             <Button
               size="icon"
               variant="ghost"
@@ -1010,7 +1010,7 @@ export function MarketplaceModule() {
   return (
     <div className="space-y-6 pb-6">
       {/* ============ Hero ============ */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-l from-amber-500 via-amber-600 to-yellow-700 text-white p-6 md:p-10 shadow-lg">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-l from-amber-500 via-amber-600 to-yellow-700 text-white p-4 sm:p-6 md:p-10 shadow-lg">
         <div
           className="absolute inset-0 opacity-20 pointer-events-none"
           style={{
@@ -1019,18 +1019,18 @@ export function MarketplaceModule() {
           }}
         />
         <Crown
-          className="absolute -top-8 -left-8 w-48 h-48 text-white/10 pointer-events-none"
+          className="absolute -top-8 -left-8 w-32 h-32 sm:w-48 sm:h-48 text-white/10 pointer-events-none"
           strokeWidth={1}
         />
-        <div className="relative z-10 space-y-4 max-w-3xl">
+        <div className="relative z-10 space-y-3 sm:space-y-4 max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs backdrop-blur">
             <Sparkles className="w-3.5 h-3.5" />
             ویترین آنلاین طلا و جواهر
           </div>
-          <h1 className="text-2xl md:text-4xl font-bold leading-tight">
+          <h1 className="text-xl sm:text-2xl md:text-4xl font-bold leading-tight">
             گنجینه‌ای از زیبایی‌های دست‌ساز
           </h1>
-          <p className="text-white/85 text-sm md:text-base leading-relaxed max-w-2xl">
+          <p className="text-white/85 text-xs sm:text-sm md:text-base leading-relaxed max-w-2xl">
             مجموعه‌ای منتخب از جدیدترین طلاهای عیار و جواهرات نفیس، با تضمین
             اصالت و ارسال سریع به سراسر کشور
           </p>
@@ -1042,7 +1042,7 @@ export function MarketplaceModule() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="جستجوی محصول، بارکد یا SKU..."
-              className="bg-white text-foreground pr-10 h-12 text-base border-0 shadow-md"
+              className="bg-white text-foreground pr-10 h-11 sm:h-12 text-sm sm:text-base border-0 shadow-md"
             />
             {search && (
               <Button
@@ -1058,7 +1058,7 @@ export function MarketplaceModule() {
           </div>
 
           {/* Promotional strip */}
-          <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-white/90">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-2 text-xs text-white/90">
             <span className="flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5" />
               ضمانت اصالت کالا
@@ -1076,7 +1076,7 @@ export function MarketplaceModule() {
       </div>
 
       {/* ============ Store selector + actions ============ */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <Store className="w-4 h-4 text-amber-600" />
@@ -1084,7 +1084,7 @@ export function MarketplaceModule() {
               فروشگاه‌ها
             </span>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
             <button
               onClick={() => setBranchId(undefined)}
               className={cn(
@@ -1178,13 +1178,14 @@ export function MarketplaceModule() {
             onClick={() => setShowFilters(true)}
           >
             <SlidersHorizontal className="w-4 h-4" />
-            <span className="hidden sm:inline">فیلتر</span>
+            <span className="hidden sm:inline">فیلترها</span>
+            <span className="sm:hidden">فیلتر</span>
           </Button>
         </div>
       </div>
 
       {/* ============ Main layout ============ */}
-      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 lg:gap-6">
         {/* Desktop sidebar */}
         <aside className="hidden lg:block">
           <div className="sticky top-4">
@@ -1211,8 +1212,8 @@ export function MarketplaceModule() {
         {/* Products section */}
         <section>
           {/* Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mb-4">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               {loading ? (
                 <span className="flex items-center gap-1.5">
                   <TrendingUp className="w-3.5 h-3.5 animate-pulse text-amber-500" />
@@ -1227,7 +1228,7 @@ export function MarketplaceModule() {
                 </>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-auto">
               {hasActiveFilters && (
                 <Button
                   variant="ghost"
@@ -1236,7 +1237,8 @@ export function MarketplaceModule() {
                   className="text-muted-foreground"
                 >
                   <X className="w-3.5 h-3.5" />
-                  پاک کردن فیلترها
+                  <span className="hidden sm:inline">پاک کردن فیلترها</span>
+                  <span className="sm:hidden">پاکسازی</span>
                 </Button>
               )}
               <Label className="text-xs text-muted-foreground hidden sm:inline">
@@ -1246,7 +1248,7 @@ export function MarketplaceModule() {
                 value={sort}
                 onValueChange={(v) => setSort(v)}
               >
-                <SelectTrigger className="w-44 h-9">
+                <SelectTrigger className="w-32 sm:w-44 h-9">
                   <SlidersHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
                   <SelectValue />
                 </SelectTrigger>
@@ -1263,7 +1265,7 @@ export function MarketplaceModule() {
 
           {/* Product grid */}
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <Card key={i} className="overflow-hidden">
                   <Skeleton className="aspect-square w-full" />
@@ -1280,7 +1282,7 @@ export function MarketplaceModule() {
             <EmptyState onReset={resetFilters} />
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
                 {items.map((p) => (
                   <ProductCard
                     key={p.id}
@@ -1295,7 +1297,7 @@ export function MarketplaceModule() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-8">
+                <div className="flex items-center justify-center gap-2 mt-6 sm:mt-8">
                   <Button
                     variant="outline"
                     size="icon"
@@ -1305,7 +1307,7 @@ export function MarketplaceModule() {
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
-                  <span className="text-sm text-muted-foreground px-3">
+                  <span className="text-xs sm:text-sm text-muted-foreground px-3">
                     صفحه {toPersianDigits(page)} از {toPersianDigits(totalPages)}
                   </span>
                   <Button
@@ -1331,7 +1333,7 @@ export function MarketplaceModule() {
         open={!!quickView}
         onOpenChange={(o) => !o && setQuickView(null)}
       >
-        <DialogContent className="max-w-3xl p-0 overflow-hidden gap-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl p-0 overflow-hidden gap-0 max-h-[95vh]">
           {quickView && (
             <QuickViewContent
               product={quickView}
@@ -1348,8 +1350,8 @@ export function MarketplaceModule() {
 
       {/* ============ Mobile filter sheet ============ */}
       <Sheet open={showFilters} onOpenChange={setShowFilters}>
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-          <SheetHeader>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
+          <SheetHeader className="px-4 pt-4">
             <SheetTitle className="flex items-center gap-2">
               <Filter className="w-4 h-4" /> فیلترها
             </SheetTitle>
@@ -1357,7 +1359,7 @@ export function MarketplaceModule() {
               فیلترهای مورد نظر خود را اعمال کنید
             </SheetDescription>
           </SheetHeader>
-          <div className="px-4 pb-4">
+          <div className="px-4 pb-4 overflow-y-auto">
             <FilterPanel
               categories={categories}
               categoryId={categoryId}
@@ -1376,7 +1378,7 @@ export function MarketplaceModule() {
               hasActiveFilters={hasActiveFilters}
             />
           </div>
-          <SheetFooter>
+          <SheetFooter className="px-4 pb-4 safe-bottom">
             <Button
               onClick={() => setShowFilters(false)}
               className="bg-amber-500 hover:bg-amber-600 text-white w-full"
@@ -1405,7 +1407,7 @@ export function MarketplaceModule() {
             </SheetDescription>
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+          <div className="flex-1 overflow-y-auto scrollbar-thin p-3 sm:p-4">
             {cart.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center gap-3 text-muted-foreground">
                 <ShoppingBag className="w-16 h-16 text-muted-foreground/30" />
@@ -1543,7 +1545,7 @@ export function MarketplaceModule() {
             <SheetDescription>محصولات مورد علاقه شما</SheetDescription>
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+          <div className="flex-1 overflow-y-auto scrollbar-thin p-3 sm:p-4">
             {wishlistProducts.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center gap-3 text-muted-foreground">
                 <Heart className="w-16 h-16 text-muted-foreground/30" />

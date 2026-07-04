@@ -338,22 +338,25 @@ export function AdminModule() {
     <div className="space-y-6">
       <ModuleHeader />
       <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="bg-muted/60 h-auto p-1 flex flex-wrap gap-1">
-          <TabsTrigger value="users" className="gap-1.5">
-            <Users className="size-4" />
-            کاربران
+        <TabsList className="bg-muted/60 h-auto p-1 flex w-full justify-start overflow-x-auto scrollbar-hide sm:w-auto gap-1">
+          <TabsTrigger value="users" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+            <Users className="size-4 shrink-0" />
+            <span>کاربران</span>
           </TabsTrigger>
-          <TabsTrigger value="roles" className="gap-1.5">
-            <Shield className="size-4" />
-            نقش‌ها و دسترسی‌ها
+          <TabsTrigger value="roles" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+            <Shield className="size-4 shrink-0" />
+            <span className="hidden xs:inline">نقش‌ها و دسترسی‌ها</span>
+            <span className="xs:hidden">نقش‌ها</span>
           </TabsTrigger>
-          <TabsTrigger value="audit" className="gap-1.5">
-            <ScrollText className="size-4" />
-            لاگ‌های ممیزی
+          <TabsTrigger value="audit" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+            <ScrollText className="size-4 shrink-0" />
+            <span className="hidden xs:inline">لاگ‌های ممیزی</span>
+            <span className="xs:hidden">لاگ‌ها</span>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="gap-1.5">
-            <Settings className="size-4" />
-            تنظیمات سیستم
+          <TabsTrigger value="settings" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+            <Settings className="size-4 shrink-0" />
+            <span className="hidden xs:inline">تنظیمات سیستم</span>
+            <span className="xs:hidden">تنظیمات</span>
           </TabsTrigger>
         </TabsList>
 
@@ -497,8 +500,8 @@ function UsersTab() {
         </CardHeader>
         <CardContent>
           {/* Filters */}
-          <div className="flex flex-col md:flex-row gap-2 mb-4">
-            <div className="relative flex-1">
+          <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:flex-wrap">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
               <Input
                 placeholder="جستجو بر اساس نام، ایمیل یا تلفن..."
@@ -508,7 +511,7 @@ function UsersTab() {
               />
             </div>
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="md:w-44">
+              <SelectTrigger className="sm:w-44 w-full">
                 <SelectValue placeholder="همه نقش‌ها" />
               </SelectTrigger>
               <SelectContent>
@@ -521,7 +524,7 @@ function UsersTab() {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="md:w-36">
+              <SelectTrigger className="sm:w-36 w-full">
                 <SelectValue placeholder="وضعیت" />
               </SelectTrigger>
               <SelectContent>
@@ -530,14 +533,14 @@ function UsersTab() {
                 <SelectItem value="inactive">غیرفعال</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon" onClick={load} title="به‌روزرسانی">
+            <Button variant="outline" size="icon" onClick={load} title="به‌روزرسانی" className="shrink-0">
               <RefreshCw className="size-4" />
             </Button>
           </div>
 
           {/* Table */}
           <div className="rounded-md border overflow-hidden">
-            <div className="max-h-[60vh] overflow-auto custom-scrollbar">
+            <div className="max-h-[60vh] overflow-auto scrollbar-thin">
               <Table>
                 <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur">
                   <TableRow>
@@ -655,8 +658,8 @@ function UsersTab() {
 
           {/* Pagination */}
           {total > 0 && (
-            <div className="flex items-center justify-between mt-4 text-sm">
-              <div className="text-muted-foreground">
+            <div className="flex flex-col sm:flex-row items-center justify-between mt-4 text-sm gap-2">
+              <div className="text-muted-foreground text-center sm:text-right">
                 نمایش{" "}
                 {toPersianDigits((page - 1) * pageSize + 1)} تا{" "}
                 {toPersianDigits(Math.min(page * pageSize, total))} از{" "}
@@ -857,7 +860,7 @@ function UserFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {editing ? (
@@ -1044,17 +1047,17 @@ function RolesTab() {
         </CardHeader>
         <CardContent>
           {/* Permission matrix */}
-          <div className="rounded-md border overflow-auto custom-scrollbar max-h-[70vh]">
+          <div className="rounded-md border overflow-auto scrollbar-thin max-h-[70vh]">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur">
                 <TableRow>
-                  <TableHead className="text-right min-w-[140px] bg-muted/95">
+                  <TableHead className="text-right min-w-[140px] bg-muted/95 sticky right-0 z-20">
                     نقش
                   </TableHead>
                   {MODULES.map((m) => (
                     <TableHead
                       key={m}
-                      className="text-center min-w-[110px] bg-muted/95"
+                      className="text-center min-w-[110px] bg-muted/95 whitespace-nowrap"
                     >
                       {m}
                     </TableHead>
@@ -1066,7 +1069,7 @@ function RolesTab() {
                   const perms = PERMISSIONS[role] || {};
                   return (
                     <TableRow key={role}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium bg-card sticky right-0 z-10">
                         <div className="flex items-center gap-2">
                           <RoleIcon role={role} />
                           <div>
@@ -1262,13 +1265,13 @@ function AuditLogsTab() {
       </CardHeader>
       <CardContent>
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-2 mb-4">
+        <div className="flex flex-col gap-2 mb-4 lg:flex-row lg:flex-wrap">
           <Select
             value={filters.action}
             onValueChange={(v) => setFilters((f) => ({ ...f, action: v }))}
           >
-            <SelectTrigger className="md:w-40">
-              <Filter className="size-3.5 ml-1" />
+            <SelectTrigger className="lg:w-40 w-full">
+              <Filter className="size-3.5 ml-1 shrink-0" />
               <SelectValue placeholder="همه اقدامات" />
             </SelectTrigger>
             <SelectContent>
@@ -1284,8 +1287,8 @@ function AuditLogsTab() {
             value={filters.entity}
             onValueChange={(v) => setFilters((f) => ({ ...f, entity: v }))}
           >
-            <SelectTrigger className="md:w-40">
-              <Filter className="size-3.5 ml-1" />
+            <SelectTrigger className="lg:w-40 w-full">
+              <Filter className="size-3.5 ml-1 shrink-0" />
               <SelectValue placeholder="همه موجودیت‌ها" />
             </SelectTrigger>
             <SelectContent>
@@ -1297,28 +1300,28 @@ function AuditLogsTab() {
               ))}
             </SelectContent>
           </Select>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Label className="text-xs text-muted-foreground whitespace-nowrap">
               از:
             </Label>
             <Input
               type="date"
               dir="ltr"
-              className="text-left w-40"
+              className="text-left w-full lg:w-40"
               value={filters.from}
               onChange={(e) =>
                 setFilters((f) => ({ ...f, from: e.target.value }))
               }
             />
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Label className="text-xs text-muted-foreground whitespace-nowrap">
               تا:
             </Label>
             <Input
               type="date"
               dir="ltr"
-              className="text-left w-40"
+              className="text-left w-full lg:w-40"
               value={filters.to}
               onChange={(e) =>
                 setFilters((f) => ({ ...f, to: e.target.value }))
@@ -1329,7 +1332,7 @@ function AuditLogsTab() {
 
         {/* Logs table */}
         <div className="rounded-md border overflow-hidden">
-          <div className="max-h-[60vh] overflow-auto custom-scrollbar">
+          <div className="max-h-[60vh] overflow-auto scrollbar-thin">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur">
                 <TableRow>
@@ -1431,7 +1434,7 @@ function AuditLogsTab() {
                             <TableCell colSpan={6} className="py-3">
                               <pre
                                 dir="ltr"
-                                className="text-left text-xs bg-background border rounded-md p-3 overflow-auto custom-scrollbar max-h-48 font-mono"
+                                className="text-left text-xs bg-background border rounded-md p-3 overflow-auto scrollbar-thin max-h-48 font-mono"
                               >
                                 {JSON.stringify(detailsObj, null, 2)}
                               </pre>
@@ -1457,8 +1460,8 @@ function AuditLogsTab() {
 
         {/* Pagination */}
         {total > 0 && (
-          <div className="flex items-center justify-between mt-4 text-sm">
-            <div className="text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-between mt-4 text-sm gap-2">
+            <div className="text-muted-foreground text-center sm:text-right">
               نمایش {toPersianDigits((page - 1) * pageSize + 1)} تا{" "}
               {toPersianDigits(Math.min(page * pageSize, total))} از{" "}
               {toPersianDigits(total)} رویداد
@@ -1590,7 +1593,7 @@ function SettingsTab() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <InfoTile
               label="نام سازمان"
               value={tenant?.name || "—"}

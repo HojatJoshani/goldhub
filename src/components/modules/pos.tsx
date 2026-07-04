@@ -13,6 +13,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -157,6 +163,7 @@ export function PosModule() {
   const [submitting, setSubmitting] = React.useState(false);
   const [lastSale, setLastSale] = React.useState<CreatedSale | null>(null);
   const [showInvoice, setShowInvoice] = React.useState(false);
+  const [cartSheetOpen, setCartSheetOpen] = React.useState(false);
 
   const barcodeRef = React.useRef<HTMLInputElement>(null);
 
@@ -416,18 +423,18 @@ export function PosModule() {
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 no-print">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Crown className="w-6 h-6 text-amber-500" />
-            صندوق فروش
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
+            <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 shrink-0" />
+            <span className="truncate">صندوق فروش</span>
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1">
             ثبت سریع فروش و صدور فاکتور
           </p>
         </div>
         <Badge
           variant="outline"
-          className="border-amber-300 text-amber-700 dark:text-amber-300 px-3 py-1 text-sm"
+          className="border-amber-300 text-amber-700 dark:text-amber-300 px-3 py-1 text-xs sm:text-sm shrink-0"
         >
           <ShoppingCart className="w-4 h-4" />
           {toPersianDigits(totalItems)} کالا در سبد
@@ -438,7 +445,7 @@ export function PosModule() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4">
         {/* Products panel */}
         <Card className="no-print">
-          <CardHeader className="pb-3">
+          <CardHeader className="p-3 sm:p-6 pb-3">
             <div className="flex flex-col gap-3">
               <div className="flex flex-col sm:flex-row gap-2">
                 {/* Search by name */}
@@ -448,7 +455,7 @@ export function PosModule() {
                     placeholder="جستجوی محصول (نام، SKU، بارکد)..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="pr-9"
+                    className="pr-9 h-10"
                   />
                 </div>
                 {/* Barcode scan input */}
@@ -465,13 +472,13 @@ export function PosModule() {
                         onBarcodeScan();
                       }
                     }}
-                    className="pr-9 border-amber-300 focus-visible:border-amber-500"
+                    className="pr-9 border-amber-300 focus-visible:border-amber-500 h-10"
                   />
                 </div>
               </div>
 
               {/* Category filter chips */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
                 <Button
                   size="sm"
                   variant={activeCategory === "" ? "default" : "outline"}
@@ -494,20 +501,20 @@ export function PosModule() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 sm:p-6 pt-0">
             {loadingProducts ? (
-              <div className="flex items-center justify-center py-20">
+              <div className="flex items-center justify-center py-16 sm:py-20">
                 <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
               </div>
             ) : products.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center">
                 <Package className="w-10 h-10 text-muted-foreground/50 mb-2" />
                 <p className="text-sm text-muted-foreground">
                   محصولی یافت نشد
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
                 {products.map((p) => {
                   const outOfStock = p.stock <= 0;
                   const inCart = cart.find((it) => it.product.id === p.id);
@@ -516,22 +523,22 @@ export function PosModule() {
                       key={p.id}
                       onClick={() => addToCart(p)}
                       disabled={outOfStock}
-                      className={`group relative text-right rounded-lg border bg-card p-3 transition-all ${
+                      className={`group relative text-right rounded-lg border bg-card p-2 sm:p-3 transition-all ${
                         outOfStock
                           ? "opacity-50 cursor-not-allowed border-muted"
                           : "hover:border-amber-400 hover:shadow-md hover:-translate-y-0.5 border-border"
                       }`}
                     >
                       {/* Karat badge */}
-                      <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start justify-between mb-1.5 sm:mb-2">
                         <Badge
                           variant="secondary"
-                          className="bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-[10px]"
+                          className="bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-[10px] h-5"
                         >
                           {karatLabel(p.karat)}
                         </Badge>
                         {inCart && (
-                          <Badge className="bg-amber-500 text-white text-[10px]">
+                          <Badge className="bg-amber-500 text-white text-[10px] h-5">
                             <Check className="w-2.5 h-2.5" />
                             {toPersianDigits(inCart.quantity)}
                           </Badge>
@@ -539,16 +546,16 @@ export function PosModule() {
                       </div>
 
                       {/* Product icon */}
-                      <div className="w-10 h-10 rounded-md bg-gradient-to-br from-amber-100 to-yellow-200 dark:from-amber-950/50 dark:to-yellow-900/30 flex items-center justify-center mb-2">
-                        <Crown className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-md bg-gradient-to-br from-amber-100 to-yellow-200 dark:from-amber-950/50 dark:to-yellow-900/30 flex items-center justify-center mb-1.5 sm:mb-2">
+                        <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />
                       </div>
 
-                      <h3 className="text-sm font-medium line-clamp-2 leading-snug min-h-[2.5rem]">
+                      <h3 className="text-xs sm:text-sm font-medium line-clamp-2 leading-snug min-h-[2.25rem] sm:min-h-[2.5rem]">
                         {p.name}
                       </h3>
 
-                      <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-                        <span>{formatWeight(p.weight)}</span>
+                      <div className="mt-1.5 sm:mt-2 flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-muted-foreground">
+                        <span className="tabular-nums">{formatWeight(p.weight)}</span>
                         {p.category && (
                           <>
                             <span>·</span>
@@ -557,8 +564,8 @@ export function PosModule() {
                         )}
                       </div>
 
-                      <div className="mt-2 flex items-end justify-between">
-                        <div>
+                      <div className="mt-1.5 sm:mt-2 flex items-end justify-between">
+                        <div className="min-w-0">
                           <p className="text-[10px] text-muted-foreground">
                             موجودی:{" "}
                             <span
@@ -571,12 +578,12 @@ export function PosModule() {
                               {toPersianDigits(p.stock)}
                             </span>
                           </p>
-                          <p className="text-sm font-bold text-amber-700 dark:text-amber-400 mt-0.5">
+                          <p className="text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-400 mt-0.5 tabular-nums">
                             {formatToman(p.salePrice)}
                           </p>
                         </div>
                         {!outOfStock && (
-                          <div className="w-7 h-7 rounded-md bg-amber-500 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <div className="w-7 h-7 rounded-md bg-amber-500 text-white flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
                             <Plus className="w-4 h-4" />
                           </div>
                         )}
@@ -589,256 +596,120 @@ export function PosModule() {
           </CardContent>
         </Card>
 
-        {/* Cart panel */}
-        <Card className="no-print flex flex-col lg:max-h-[calc(100vh-9rem)] lg:sticky lg:top-4">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5 text-amber-500" />
-                سبد خرید
-                {totalItems > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
-                  >
-                    {toPersianDigits(totalItems)}
-                  </Badge>
-                )}
-              </CardTitle>
-              {cart.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={clearCart}
-                  className="text-destructive hover:text-destructive h-8"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  پاک کردن
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-
-          <CardContent className="flex-1 flex flex-col gap-3 overflow-hidden">
-            {/* Cart items */}
-            {cart.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
-                <ShoppingCart className="w-10 h-10 text-muted-foreground/40 mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  سبد خرید خالی است
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  محصولی را انتخاب یا بارکد را اسکن کنید
-                </p>
-              </div>
-            ) : (
-              <ScrollArea className="flex-1 max-h-72 lg:max-h-none pr-1">
-                <div className="space-y-2">
-                  {cart.map((it) => (
-                    <div
-                      key={it.product.id}
-                      className="rounded-lg border bg-card p-2.5"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium line-clamp-1">
-                            {it.product.name}
-                          </p>
-                          <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-muted-foreground">
-                            <Badge
-                              variant="outline"
-                              className="text-[9px] px-1 py-0 h-4 border-amber-300 text-amber-700 dark:text-amber-300"
-                            >
-                              {karatLabel(it.product.karat)}
-                            </Badge>
-                            <span>{formatWeight(it.product.weight)}</span>
-                          </div>
-                        </div>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
-                          onClick={() => removeFromCart(it.product.id)}
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-
-                      <div className="flex items-center justify-between mt-2">
-                        {/* Qty stepper */}
-                        <div className="flex items-center gap-1">
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-6 w-6"
-                            onClick={() => changeQty(it.product.id, -1)}
-                          >
-                            <Minus className="w-3 h-3" />
-                          </Button>
-                          <Input
-                            type="text"
-                            inputMode="numeric"
-                            value={toPersianDigits(it.quantity)}
-                            onChange={(e) => {
-                              const v = parseInt(
-                                e.target.value.replace(/[^\d]/g, "") || "0",
-                                10
-                              );
-                              setQty(it.product.id, isNaN(v) ? 0 : v);
-                            }}
-                            className="h-6 w-10 text-center text-xs px-0"
-                          />
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-6 w-6"
-                            onClick={() => changeQty(it.product.id, 1)}
-                            disabled={it.quantity >= it.product.stock}
-                          >
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                        </div>
-                        <div className="text-left">
-                          <p className="text-[10px] text-muted-foreground">
-                            {formatToman(it.product.salePrice)}
-                          </p>
-                          <p className="text-sm font-bold text-amber-700 dark:text-amber-400">
-                            {formatToman(it.product.salePrice * it.quantity)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            )}
-
-            {/* Customer + payment + totals */}
-            {cart.length > 0 && (
-              <div className="space-y-3 pt-1">
-                <Separator />
-
-                {/* Customer selector */}
-                <CustomerSelector
-                  value={customerId}
-                  onChange={setCustomerId}
-                  customers={customers}
-                  onLoad={loadCustomers}
-                  loading={loadingCustomers}
-                />
-
-                {/* Discount */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      تخفیف (تومان)
-                    </label>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="۰"
-                      value={discount ? toPersianDigits(discount) : ""}
-                      onChange={(e) => {
-                        const v = e.target.value.replace(/[^\d]/g, "");
-                        setDiscount(v);
-                      }}
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      توضیحات
-                    </label>
-                    <Input
-                      placeholder="اختیاری..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-
-                {/* Payment method */}
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">
-                    روش پرداخت
-                  </label>
-                  <div className="grid grid-cols-5 gap-1">
-                    {PAYMENT_METHODS.map((m) => {
-                      const Icon = m.icon;
-                      const active = paymentMethod === m.value;
-                      return (
-                        <button
-                          key={m.value}
-                          type="button"
-                          onClick={() => setPaymentMethod(m.value)}
-                          className={`flex flex-col items-center justify-center gap-1 rounded-md border py-1.5 text-[10px] font-medium transition-all ${
-                            active
-                              ? "border-amber-500 bg-amber-500 text-white"
-                              : "border-border bg-background hover:border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                          {m.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Totals */}
-                <div className="space-y-1.5 text-sm">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>جمع کل</span>
-                    <span>{formatToman(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>اجرت ساخت</span>
-                    <span>{formatToman(makingTotal)}</span>
-                  </div>
-                  {discountValue > 0 && (
-                    <div className="flex justify-between text-destructive">
-                      <span>تخفیف</span>
-                      <span>- {formatToman(discountValue)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center pt-2 border-t border-dashed">
-                    <span className="font-bold">مبلغ نهایی</span>
-                    <span className="text-lg font-bold text-amber-700 dark:text-amber-400">
-                      {formatToman(total)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Checkout */}
-                <Button
-                  onClick={checkout}
-                  disabled={submitting || cart.length === 0}
-                  className="w-full h-11 gold-gradient text-white font-bold hover:opacity-90 shadow-md"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      در حال ثبت...
-                    </>
-                  ) : (
-                    <>
-                      <Receipt className="w-4 h-4" />
-                      ثبت فروش و صدور فاکتور
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-          </CardContent>
+        {/* Cart panel (desktop only — inline) */}
+        <Card className="no-print hidden lg:flex flex-col lg:max-h-[calc(100vh-9rem)] lg:sticky lg:top-4 overflow-hidden">
+          <CartPanelContent
+            cart={cart}
+            totalItems={totalItems}
+            subtotal={subtotal}
+            makingTotal={makingTotal}
+            discount={discount}
+            discountValue={discountValue}
+            total={total}
+            customerId={customerId}
+            setCustomerId={setCustomerId}
+            setDiscount={setDiscount}
+            notes={notes}
+            setNotes={setNotes}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
+            submitting={submitting}
+            customers={customers}
+            loadingCustomers={loadingCustomers}
+            loadCustomers={loadCustomers}
+            onClearCart={clearCart}
+            onRemove={removeFromCart}
+            onChangeQty={changeQty}
+            onSetQty={setQty}
+            onCheckout={checkout}
+          />
         </Card>
       </div>
 
+      {/* Mobile sticky bottom bar (lg:hidden) */}
+      <div className="lg:hidden sticky bottom-0 z-30 bg-background/95 backdrop-blur border-t border-amber-200 dark:border-amber-900 p-3 flex items-center gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] safe-bottom no-print">
+        <div className="flex-1 min-w-0">
+          {totalItems > 0 ? (
+            <>
+              <p className="text-[10px] text-muted-foreground">مبلغ نهایی · {toPersianDigits(totalItems)} کالا</p>
+              <p className="text-base font-bold text-amber-700 dark:text-amber-400 truncate tabular-nums">
+                {formatToman(total)}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">سبد خرید خالی است</p>
+          )}
+        </div>
+        <Button
+          onClick={() => setCartSheetOpen(true)}
+          className="bg-amber-500 hover:bg-amber-600 text-white font-bold shrink-0 h-11 px-4"
+        >
+          <ShoppingCart className="w-4 h-4" />
+          سبد خرید
+          {totalItems > 0 && (
+            <Badge className="bg-white/20 text-white ml-1 tabular-nums">
+              {toPersianDigits(totalItems)}
+            </Badge>
+          )}
+        </Button>
+      </div>
+
+      {/* Mobile cart sheet (lg:hidden) */}
+      <Sheet open={cartSheetOpen} onOpenChange={setCartSheetOpen}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-md p-0 flex flex-col gap-0 no-print"
+        >
+          <SheetHeader className="p-4 border-b shrink-0">
+            <SheetTitle className="flex items-center gap-2 text-base pr-8">
+              <ShoppingCart className="w-5 h-5 text-amber-500" />
+              سبد خرید
+              {totalItems > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                >
+                  {toPersianDigits(totalItems)}
+                </Badge>
+              )}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <CartPanelContent
+              cart={cart}
+              totalItems={totalItems}
+              subtotal={subtotal}
+              makingTotal={makingTotal}
+              discount={discount}
+              discountValue={discountValue}
+              total={total}
+              customerId={customerId}
+              setCustomerId={setCustomerId}
+              setDiscount={setDiscount}
+              notes={notes}
+              setNotes={setNotes}
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+              submitting={submitting}
+              customers={customers}
+              loadingCustomers={loadingCustomers}
+              loadCustomers={loadCustomers}
+              onClearCart={() => {
+                clearCart();
+              }}
+              onRemove={removeFromCart}
+              onChangeQty={changeQty}
+              onSetQty={setQty}
+              onCheckout={checkout}
+              variant="mobile"
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Invoice Dialog (on-screen) */}
       <Dialog open={showInvoice} onOpenChange={setShowInvoice}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[100vw] sm:max-w-2xl h-[100vh] sm:h-auto max-h-[100vh] sm:max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogTitle className="sr-only">فاکتور فروش</DialogTitle>
           {lastSale && (
             <InvoiceView
@@ -860,6 +731,339 @@ export function PosModule() {
 }
 
 // ============ Sub-components ============
+
+interface CartPanelContentProps {
+  cart: CartItem[];
+  totalItems: number;
+  subtotal: number;
+  makingTotal: number;
+  discount: string;
+  discountValue: number;
+  total: number;
+  customerId: string;
+  setCustomerId: (id: string) => void;
+  setDiscount: (v: string) => void;
+  notes: string;
+  setNotes: (v: string) => void;
+  paymentMethod: PaymentMethod;
+  setPaymentMethod: (m: PaymentMethod) => void;
+  submitting: boolean;
+  customers: PosCustomer[];
+  loadingCustomers: boolean;
+  loadCustomers: (q?: string) => void;
+  onClearCart: () => void;
+  onRemove: (productId: string) => void;
+  onChangeQty: (productId: string, delta: number) => void;
+  onSetQty: (productId: string, qty: number) => void;
+  onCheckout: () => void;
+  variant?: "desktop" | "mobile";
+}
+
+function CartPanelContent({
+  cart,
+  totalItems,
+  subtotal,
+  makingTotal,
+  discount,
+  discountValue,
+  total,
+  customerId,
+  setCustomerId,
+  setDiscount,
+  notes,
+  setNotes,
+  paymentMethod,
+  setPaymentMethod,
+  submitting,
+  customers,
+  loadingCustomers,
+  loadCustomers,
+  onClearCart,
+  onRemove,
+  onChangeQty,
+  onSetQty,
+  onCheckout,
+  variant = "desktop",
+}: CartPanelContentProps) {
+  const isMobile = variant === "mobile";
+  return (
+    <>
+      {/* Header (only desktop — mobile uses SheetHeader) */}
+      {!isMobile && (
+        <CardHeader className="p-4 sm:p-6 pb-3 shrink-0">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-amber-500" />
+              سبد خرید
+              {totalItems > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                >
+                  {toPersianDigits(totalItems)}
+                </Badge>
+              )}
+            </CardTitle>
+            {cart.length > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onClearCart}
+                className="text-destructive hover:text-destructive h-8"
+              >
+                <Trash2 className="w-4 h-4" />
+                پاک کردن
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+      )}
+
+      {/* Clear-cart button on mobile (below SheetHeader) */}
+      {isMobile && cart.length > 0 && (
+        <div className="px-4 pt-3 shrink-0">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onClearCart}
+            className="text-destructive hover:text-destructive h-8"
+          >
+            <Trash2 className="w-4 h-4" />
+            پاک کردن سبد
+          </Button>
+        </div>
+      )}
+
+      <CardContent
+        className={`flex-1 flex flex-col gap-3 overflow-hidden p-4 sm:p-6 ${
+          isMobile ? "pt-3" : "pt-0"
+        }`}
+      >
+        {/* Cart items */}
+        {cart.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
+            <ShoppingCart className="w-10 h-10 text-muted-foreground/40 mb-2" />
+            <p className="text-sm text-muted-foreground">سبد خرید خالی است</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              محصولی را انتخاب یا بارکد را اسکن کنید
+            </p>
+          </div>
+        ) : (
+          <ScrollArea
+            className={`flex-1 pr-1 ${
+              isMobile ? "" : "max-h-72 lg:max-h-none"
+            }`}
+          >
+            <div className="space-y-2">
+              {cart.map((it) => (
+                <div
+                  key={it.product.id}
+                  className="rounded-lg border bg-card p-2.5"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium line-clamp-1">
+                        {it.product.name}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-muted-foreground">
+                        <Badge
+                          variant="outline"
+                          className="text-[9px] px-1 py-0 h-4 border-amber-300 text-amber-700 dark:text-amber-300"
+                        >
+                          {karatLabel(it.product.karat)}
+                        </Badge>
+                        <span className="tabular-nums">{formatWeight(it.product.weight)}</span>
+                      </div>
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0"
+                      onClick={() => onRemove(it.product.id)}
+                      title="حذف از سبد"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-2 gap-2">
+                    {/* Qty stepper — touch friendly (min 36px) */}
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-9 w-9"
+                        onClick={() => onChangeQty(it.product.id, -1)}
+                        title="کاهش"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </Button>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        value={toPersianDigits(it.quantity)}
+                        onChange={(e) => {
+                          const v = parseInt(
+                            e.target.value.replace(/[^\d]/g, "") || "0",
+                            10
+                          );
+                          onSetQty(it.product.id, isNaN(v) ? 0 : v);
+                        }}
+                        className="h-9 w-12 text-center text-sm px-0 tabular-nums"
+                      />
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-9 w-9"
+                        onClick={() => onChangeQty(it.product.id, 1)}
+                        disabled={it.quantity >= it.product.stock}
+                        title="افزایش"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="text-left shrink-0">
+                      <p className="text-[10px] text-muted-foreground tabular-nums">
+                        {formatToman(it.product.salePrice)}
+                      </p>
+                      <p className="text-sm font-bold text-amber-700 dark:text-amber-400 tabular-nums">
+                        {formatToman(it.product.salePrice * it.quantity)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        )}
+
+        {/* Customer + payment + totals */}
+        {cart.length > 0 && (
+          <div
+            className={`space-y-3 pt-1 shrink-0 ${
+              isMobile ? "border-t pt-3" : ""
+            }`}
+          >
+            <Separator />
+
+            {/* Customer selector */}
+            <CustomerSelector
+              value={customerId}
+              onChange={setCustomerId}
+              customers={customers}
+              onLoad={loadCustomers}
+              loading={loadingCustomers}
+            />
+
+            {/* Discount + notes */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">
+                  تخفیف (تومان)
+                </label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="۰"
+                  value={discount ? toPersianDigits(discount) : ""}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^\d]/g, "");
+                    setDiscount(v);
+                  }}
+                  className="h-9 tabular-nums"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">
+                  توضیحات
+                </label>
+                <Input
+                  placeholder="اختیاری..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+            </div>
+
+            {/* Payment method */}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1.5 block">
+                روش پرداخت
+              </label>
+              <div className="grid grid-cols-5 gap-1">
+                {PAYMENT_METHODS.map((m) => {
+                  const Icon = m.icon;
+                  const active = paymentMethod === m.value;
+                  return (
+                    <button
+                      key={m.value}
+                      type="button"
+                      onClick={() => setPaymentMethod(m.value)}
+                      className={`flex flex-col items-center justify-center gap-1 rounded-md border py-1.5 text-[10px] font-medium transition-all ${
+                        active
+                          ? "border-amber-500 bg-amber-500 text-white"
+                          : "border-border bg-background hover:border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {m.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Totals */}
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between text-muted-foreground">
+                <span>جمع کل</span>
+                <span className="tabular-nums">{formatToman(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>اجرت ساخت</span>
+                <span className="tabular-nums">{formatToman(makingTotal)}</span>
+              </div>
+              {discountValue > 0 && (
+                <div className="flex justify-between text-destructive">
+                  <span>تخفیف</span>
+                  <span className="tabular-nums">- {formatToman(discountValue)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-2 border-t border-dashed">
+                <span className="font-bold">مبلغ نهایی</span>
+                <span className="text-base sm:text-lg font-bold text-amber-700 dark:text-amber-400 tabular-nums">
+                  {formatToman(total)}
+                </span>
+              </div>
+            </div>
+
+            {/* Checkout */}
+            <Button
+              onClick={onCheckout}
+              disabled={submitting || cart.length === 0}
+              className="w-full h-12 gold-gradient text-white font-bold hover:opacity-90 shadow-md"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  در حال ثبت...
+                </>
+              ) : (
+                <>
+                  <Receipt className="w-4 h-4" />
+                  ثبت فروش و صدور فاکتور
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </>
+  );
+}
 
 function CustomerSelector({
   value,

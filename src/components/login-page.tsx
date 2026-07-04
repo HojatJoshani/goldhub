@@ -32,15 +32,15 @@ export function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Brand side */}
-      <div className="lg:w-1/2 bg-gradient-to-br from-amber-900 via-amber-800 to-yellow-900 text-white p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+      <div className="lg:w-1/2 bg-gradient-to-br from-amber-900 via-amber-800 to-yellow-900 text-white p-6 sm:p-8 lg:p-16 flex flex-col justify-between relative overflow-hidden safe-top safe-bottom">
         <div className="absolute inset-0 opacity-10" style={{
           backgroundImage: "radial-gradient(circle at 20% 30%, #F5D061 0%, transparent 40%), radial-gradient(circle at 80% 70%, #D4A017 0%, transparent 40%)"
         }} />
         <div className="relative z-10 flex items-center gap-3">
-          <GoldHubLogo className="w-12 h-12" />
-          <div>
-            <h1 className="text-2xl font-bold">گلد هاب</h1>
-            <p className="text-amber-200 text-sm">پلتفرم هوشمند طلا و جواهر</p>
+          <GoldHubLogo className="w-10 h-10 sm:w-12 sm:h-12 shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold">گلد هاب</h1>
+            <p className="text-amber-200 text-xs sm:text-sm">پلتفرم هوشمند طلا و جواهر</p>
           </div>
         </div>
 
@@ -73,35 +73,35 @@ export function LoginPage() {
           </div>
         </div>
 
-        <div className="relative z-10 text-amber-200 text-sm">
+        <div className="relative z-10 text-amber-200 text-xs sm:text-sm">
           © {toPersianDigits(1404)} گلد هاب - تمامی حقوق محفوظ است
         </div>
       </div>
 
       {/* Form side */}
-      <div className="lg:w-1/2 flex items-center justify-center p-6 lg:p-16 bg-background">
+      <div className="lg:w-1/2 flex items-center justify-center p-4 sm:p-6 lg:p-16 bg-background">
         <div className="w-full max-w-md">
-          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <GoldHubLogo className="w-10 h-10" />
-            <h1 className="text-2xl font-bold gold-text">گلد هاب</h1>
+          <div className="lg:hidden flex items-center justify-center gap-3 mb-6 sm:mb-8">
+            <GoldHubLogo className="w-9 h-9 sm:w-10 sm:h-10 shrink-0" />
+            <h1 className="text-xl sm:text-2xl font-bold gold-text">گلد هاب</h1>
           </div>
 
           <Card>
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl">ورود به حساب</CardTitle>
-              <CardDescription>
+            <CardHeader className="space-y-1 p-4 sm:p-6">
+              <CardTitle className="text-xl sm:text-2xl">ورود به حساب</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 برای ادامه، ایمیل و رمز عبور خود را وارد کنید
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                 {error && (
-                  <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                  <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-xs sm:text-sm">
                     {error}
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="email">ایمیل</Label>
+                  <Label htmlFor="email" className="text-sm">ایمیل</Label>
                   <div className="relative">
                     <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input

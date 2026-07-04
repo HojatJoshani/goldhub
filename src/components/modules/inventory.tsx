@@ -155,41 +155,41 @@ export function InventoryModule() {
   const [tab, setTab] = React.useState("products");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Package className="w-6 h-6 text-amber-500" />
-              مدیریت انبار
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
+              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 shrink-0" />
+              <span className="truncate">مدیریت انبار</span>
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">
+            <p className="text-muted-foreground text-xs sm:text-sm mt-1">
               مدیریت محصولات، حرکات انبار و دسته‌بندی‌ها
             </p>
           </div>
-          <TabsList className="h-auto">
-            <TabsTrigger value="products" className="gap-1.5">
-              <Boxes className="w-4 h-4" />
-              محصولات
+          <TabsList className="h-auto w-full sm:w-auto grid grid-cols-3 sm:flex">
+            <TabsTrigger value="products" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+              <Boxes className="w-4 h-4 shrink-0" />
+              <span className="truncate">محصولات</span>
             </TabsTrigger>
-            <TabsTrigger value="movements" className="gap-1.5">
-              <ArrowLeftRight className="w-4 h-4" />
-              حرکات انبار
+            <TabsTrigger value="movements" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+              <ArrowLeftRight className="w-4 h-4 shrink-0" />
+              <span className="truncate">حرکات</span>
             </TabsTrigger>
-            <TabsTrigger value="categories" className="gap-1.5">
-              <Tags className="w-4 h-4" />
-              دسته‌بندی‌ها
+            <TabsTrigger value="categories" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+              <Tags className="w-4 h-4 shrink-0" />
+              <span className="truncate">دسته‌ها</span>
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="products" className="mt-6">
+        <TabsContent value="products" className="mt-4 sm:mt-6">
           <ProductsTab />
         </TabsContent>
-        <TabsContent value="movements" className="mt-6">
+        <TabsContent value="movements" className="mt-4 sm:mt-6">
           <MovementsTab />
         </TabsContent>
-        <TabsContent value="categories" className="mt-6">
+        <TabsContent value="categories" className="mt-4 sm:mt-6">
           <CategoriesTab />
         </TabsContent>
       </Tabs>
@@ -254,10 +254,10 @@ function StatsRow({ refreshKey }: { refreshKey: number }) {
 
   if (loading || !stats) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
-            <CardContent className="p-5 h-32">
+            <CardContent className="p-3 sm:p-5 h-24 sm:h-32">
               <Skeleton className="h-full w-full" />
             </CardContent>
           </Card>
@@ -267,7 +267,7 @@ function StatsRow({ refreshKey }: { refreshKey: number }) {
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <StatCard
         title="تعداد محصولات"
         value={toPersianDigits(stats.total)}
@@ -315,16 +315,16 @@ function StatCard({
   };
   return (
     <Card>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between mb-3">
+      <CardContent className="p-3 sm:p-5">
+        <div className="flex items-start justify-between mb-2 sm:mb-3">
           <div
-            className={`w-10 h-10 rounded-lg flex items-center justify-center ${accentColors[accent]}`}
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${accentColors[accent]}`}
           >
-            <Icon className="w-5 h-5" />
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
-        <p className="text-sm text-muted-foreground mb-1">{title}</p>
-        <p className="text-xl font-bold truncate">{value}</p>
+        <p className="text-[11px] sm:text-sm text-muted-foreground mb-1 truncate">{title}</p>
+        <p className="text-base sm:text-xl font-bold truncate tabular-nums">{value}</p>
       </CardContent>
     </Card>
   );
@@ -455,8 +455,8 @@ function ProductsTab() {
 
       {/* Filters bar */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
             <div className="relative flex-1 min-w-0">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -476,7 +476,7 @@ function ProductsTab() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-full lg:w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="دسته‌بندی" />
               </SelectTrigger>
               <SelectContent>
@@ -495,7 +495,7 @@ function ProductsTab() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-full lg:w-36">
+              <SelectTrigger className="w-full sm:w-36">
                 <SelectValue placeholder="عیار" />
               </SelectTrigger>
               <SelectContent>
@@ -507,7 +507,7 @@ function ProductsTab() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border bg-background">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md border bg-background shrink-0">
               <Switch
                 checked={lowStock}
                 onCheckedChange={(c) => {
@@ -522,7 +522,7 @@ function ProductsTab() {
                 setEditing(null);
                 setFormOpen(true);
               }}
-              className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+              className="bg-amber-500 hover:bg-amber-600 text-white shrink-0 w-full sm:w-auto"
             >
               <Plus className="w-4 h-4" />
               افزودن محصول
@@ -535,7 +535,7 @@ function ProductsTab() {
       <Card>
         <CardContent className="p-0">
           <div className="hidden md:block">
-            <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+            <div className="max-h-[60vh] overflow-y-auto overflow-x-auto custom-scrollbar">
               <Table>
                 <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur z-10">
                   <TableRow>
@@ -692,19 +692,19 @@ function ProductsTab() {
             ) : (
               products.map((p) => (
                 <Card key={p.id}>
-                  <CardContent className="p-4 space-y-3">
+                  <CardContent className="p-3 sm:p-4 space-y-3">
                     <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center shrink-0">
-                        <Package className="w-6 h-6 text-amber-600" />
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center shrink-0">
+                        <Package className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{p.name}</p>
+                        <p className="font-medium text-sm truncate">{p.name}</p>
                         {p.category && (
                           <p className="text-xs text-muted-foreground">
                             {p.category.name}
                           </p>
                         )}
-                        <p className="font-mono text-xs text-muted-foreground mt-1">
+                        <p className="font-mono text-[10px] sm:text-xs text-muted-foreground mt-1">
                           {p.barcode || "—"} · {p.sku}
                         </p>
                       </div>
@@ -717,26 +717,26 @@ function ProductsTab() {
                       </div>
                       <div>
                         <span className="text-muted-foreground">وزن: </span>
-                        <span className="font-medium">{formatWeight(p.weight)}</span>
+                        <span className="font-medium tabular-nums">{formatWeight(p.weight)}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">خرید: </span>
-                        <span className="font-medium">{formatToman(p.purchasePrice)}</span>
+                        <span className="font-medium tabular-nums">{formatToman(p.purchasePrice)}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">فروش: </span>
-                        <span className="font-medium">{formatToman(p.salePrice)}</span>
+                        <span className="font-medium tabular-nums">{formatToman(p.salePrice)}</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-2 pt-2 border-t">
                       <div>
                         <span className="text-xs text-muted-foreground">موجودی: </span>
                         {p.stock <= p.minStock ? (
-                          <Badge variant="destructive" className="mr-1">
+                          <Badge variant="destructive" className="mr-1 tabular-nums">
                             {toPersianDigits(p.stock)}
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="mr-1">
+                          <Badge variant="secondary" className="mr-1 tabular-nums">
                             {toPersianDigits(p.stock)}
                           </Badge>
                         )}
@@ -745,27 +745,30 @@ function ProductsTab() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-8 w-8 text-amber-600"
+                          className="h-9 w-9 text-amber-600"
                           onClick={() => setStockDialogProduct(p)}
+                          title="تعدیل موجودی"
                         >
                           <PackagePlus className="w-4 h-4" />
                         </Button>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-8 w-8"
+                          className="h-9 w-9"
                           onClick={() => {
                             setEditing(p);
                             setFormOpen(true);
                           }}
+                          title="ویرایش"
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-8 w-8 text-destructive"
+                          className="h-9 w-9 text-destructive"
                           onClick={() => setDeleteDialogProduct(p)}
+                          title="حذف"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -782,12 +785,17 @@ function ProductsTab() {
       {/* Pagination */}
       {total > 0 && (
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-sm text-muted-foreground">
-            نمایش {toPersianDigits((page - 1) * PAGE_SIZE + 1)} تا{" "}
-            {toPersianDigits(Math.min(page * PAGE_SIZE, total))} از{" "}
-            {toPersianDigits(total)} محصول
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            <span className="hidden sm:inline">
+              نمایش {toPersianDigits((page - 1) * PAGE_SIZE + 1)} تا{" "}
+              {toPersianDigits(Math.min(page * PAGE_SIZE, total))} از{" "}
+              {toPersianDigits(total)} محصول
+            </span>
+            <span className="sm:hidden tabular-nums">
+              {toPersianDigits(total)} محصول
+            </span>
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -795,10 +803,10 @@ function ProductsTab() {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               <ChevronRight className="w-4 h-4" />
-              قبلی
+              <span className="hidden sm:inline">قبلی</span>
             </Button>
-            <span className="text-sm">
-              صفحه {toPersianDigits(page)} از {toPersianDigits(totalPages)}
+            <span className="text-xs sm:text-sm tabular-nums px-2">
+              {toPersianDigits(page)} / {toPersianDigits(totalPages)}
             </span>
             <Button
               variant="outline"
@@ -806,7 +814,7 @@ function ProductsTab() {
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >
-              بعدی
+              <span className="hidden sm:inline">بعدی</span>
               <ChevronLeft className="w-4 h-4" />
             </Button>
           </div>
@@ -1013,7 +1021,7 @@ function ProductFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
         <DialogHeader>
           <DialogTitle>
             {product ? "ویرایش محصول" : "افزودن محصول جدید"}
@@ -1025,7 +1033,7 @@ function ProductFormDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* Name */}
             <Field label="نام محصول *" className="sm:col-span-2">
               <Input
@@ -1382,7 +1390,7 @@ function StockMoveDialog({
         if (!o) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-[95vw] sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <PackagePlus className="w-5 h-5 text-amber-500" />
@@ -1506,7 +1514,7 @@ function DeleteConfirmDialog({
         if (!o) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-[95vw] sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-destructive" />
@@ -1577,18 +1585,18 @@ function MovementsTab() {
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
             <ArrowLeftRight className="w-5 h-5 text-amber-500" />
             تاریخچه حرکات انبار
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs sm:text-sm">
             ثبت تمام ورود، خروج و تعدیل‌های موجودی محصولات
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           {/* Filter */}
-          <div className="px-4 py-3 border-b flex flex-wrap items-center gap-3">
+          <div className="px-3 sm:px-4 py-3 border-b flex flex-col sm:flex-row sm:items-center gap-3">
             <Select
               value={type}
               onValueChange={(v) => {
@@ -1596,7 +1604,7 @@ function MovementsTab() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="نوع حرکت" />
               </SelectTrigger>
               <SelectContent>
@@ -1611,7 +1619,7 @@ function MovementsTab() {
           </div>
 
           {/* Table */}
-          <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+          <div className="max-h-[60vh] overflow-y-auto overflow-x-auto custom-scrollbar">
             <Table>
               <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur z-10">
                 <TableRow>
@@ -1649,21 +1657,21 @@ function MovementsTab() {
                       (m.type === "adjustment" && m.quantity > 0);
                     return (
                       <TableRow key={m.id}>
-                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        <TableCell className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                           {formatPersianDateTime(m.createdAt)}
                         </TableCell>
                         <TableCell>
                           {m.product ? (
-                            <div className="min-w-[160px]">
-                              <p className="font-medium text-sm truncate">
+                            <div className="min-w-[140px] sm:min-w-[160px]">
+                              <p className="font-medium text-xs sm:text-sm truncate">
                                 {m.product.name}
                               </p>
-                              <p className="text-xs text-muted-foreground font-mono">
+                              <p className="text-[10px] sm:text-xs text-muted-foreground font-mono">
                                 {m.product.sku} · {karatLabel(m.product.karat)}
                               </p>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground text-sm">
+                            <span className="text-muted-foreground text-xs sm:text-sm">
                               —
                             </span>
                           )}
@@ -1673,7 +1681,7 @@ function MovementsTab() {
                         </TableCell>
                         <TableCell>
                           <span
-                            className={`font-bold ${
+                            className={`font-bold text-xs sm:text-sm tabular-nums ${
                               isIncoming ? "text-green-600" : "text-destructive"
                             }`}
                           >
@@ -1681,7 +1689,7 @@ function MovementsTab() {
                             {toPersianDigits(m.quantity)}
                           </span>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="text-xs sm:text-sm text-muted-foreground">
                           {m.reason || "—"}
                         </TableCell>
                       </TableRow>
@@ -1696,12 +1704,17 @@ function MovementsTab() {
 
       {total > 0 && (
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-sm text-muted-foreground">
-            نمایش {toPersianDigits((page - 1) * PAGE_SIZE + 1)} تا{" "}
-            {toPersianDigits(Math.min(page * PAGE_SIZE, total))} از{" "}
-            {toPersianDigits(total)} حرکت
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            <span className="hidden sm:inline">
+              نمایش {toPersianDigits((page - 1) * PAGE_SIZE + 1)} تا{" "}
+              {toPersianDigits(Math.min(page * PAGE_SIZE, total))} از{" "}
+              {toPersianDigits(total)} حرکت
+            </span>
+            <span className="sm:hidden tabular-nums">
+              {toPersianDigits(total)} حرکت
+            </span>
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -1709,10 +1722,10 @@ function MovementsTab() {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               <ChevronRight className="w-4 h-4" />
-              قبلی
+              <span className="hidden sm:inline">قبلی</span>
             </Button>
-            <span className="text-sm">
-              صفحه {toPersianDigits(page)} از {toPersianDigits(totalPages)}
+            <span className="text-xs sm:text-sm tabular-nums px-2">
+              {toPersianDigits(page)} / {toPersianDigits(totalPages)}
             </span>
             <Button
               variant="outline"
@@ -1720,7 +1733,7 @@ function MovementsTab() {
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >
-              بعدی
+              <span className="hidden sm:inline">بعدی</span>
               <ChevronLeft className="w-4 h-4" />
             </Button>
           </div>
@@ -1814,19 +1827,19 @@ function CategoriesTab() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
       {/* Add category */}
       <Card className="lg:col-span-1 h-fit">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
             <Tags className="w-5 h-5 text-amber-500" />
             افزودن دسته‌بندی
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs sm:text-sm">
             دسته‌بندی جدید برای طبقه‌بندی محصولات ایجاد کنید
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           <form onSubmit={handleAdd} className="space-y-4">
             <Field label="نام دسته‌بندی *">
               <Input
@@ -1862,14 +1875,14 @@ function CategoriesTab() {
 
       {/* Categories list */}
       <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle className="text-lg">دسته‌بندی‌ها</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">دسته‌بندی‌ها</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             {toPersianDigits(categories.length)} دسته‌بندی موجود
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+          <div className="max-h-[60vh] overflow-y-auto overflow-x-auto custom-scrollbar">
             <Table>
               <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur z-10">
                 <TableRow>
@@ -1900,15 +1913,15 @@ function CategoriesTab() {
                 ) : (
                   categories.map((c) => (
                     <TableRow key={c.id}>
-                      <TableCell className="font-medium">{c.name}</TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
+                      <TableCell className="font-medium text-xs sm:text-sm">{c.name}</TableCell>
+                      <TableCell className="font-mono text-[10px] sm:text-xs text-muted-foreground">
                         {c.slug}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-xs sm:text-sm text-muted-foreground">
                         {c.description || "—"}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">
+                        <Badge variant="secondary" className="tabular-nums">
                           {toPersianDigits(c._count?.products ?? 0)}
                         </Badge>
                       </TableCell>

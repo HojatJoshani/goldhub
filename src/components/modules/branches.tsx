@@ -146,28 +146,31 @@ export function BranchesModule() {
   return (
     <div className="space-y-6">
       <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Building2 className="w-6 h-6 text-amber-500" />
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500" />
               شعبات و انبارها
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">
+            <p className="text-muted-foreground text-xs sm:text-sm mt-1">
               مدیریت شعبات، انبارها، انتقالات بین شعبه‌ای و شاخص عملکرد
             </p>
           </div>
-          <TabsList className="h-auto">
-            <TabsTrigger value="branches" className="gap-1.5">
-              <Store className="w-4 h-4" />
-              شعبات و انبارها
+          <TabsList className="h-auto w-full sm:w-auto overflow-x-auto scrollbar-hide">
+            <TabsTrigger value="branches" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+              <Store className="w-4 h-4 shrink-0" />
+              <span className="hidden xs:inline">شعبات و انبارها</span>
+              <span className="xs:hidden">شعبات</span>
             </TabsTrigger>
-            <TabsTrigger value="transfers" className="gap-1.5">
-              <ArrowRightLeft className="w-4 h-4" />
-              انتقالات انبار
+            <TabsTrigger value="transfers" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+              <ArrowRightLeft className="w-4 h-4 shrink-0" />
+              <span className="hidden xs:inline">انتقالات انبار</span>
+              <span className="xs:hidden">انتقالات</span>
             </TabsTrigger>
-            <TabsTrigger value="metrics" className="gap-1.5">
-              <TrendingUp className="w-4 h-4" />
-              شاخص شعبات
+            <TabsTrigger value="metrics" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+              <TrendingUp className="w-4 h-4 shrink-0" />
+              <span className="hidden xs:inline">شاخص شعبات</span>
+              <span className="xs:hidden">شاخص</span>
             </TabsTrigger>
           </TabsList>
         </div>
@@ -234,7 +237,7 @@ function BranchesTab() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
               <CardContent className="p-5 h-48">
@@ -251,7 +254,7 @@ function BranchesTab() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {branches.map((b) => (
             <BranchCard key={b.id} branch={b} />
           ))}
@@ -281,14 +284,14 @@ function BranchCard({ branch }: { branch: Branch }) {
 
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <CardContent className="p-5 space-y-4">
+      <CardContent className="p-4 sm:p-5 space-y-3 sm:space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 ${typeBadge.color}`}>
+            <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-lg flex items-center justify-center shrink-0 ${typeBadge.color}`}>
               <TypeIcon className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <h3 className="font-bold text-base truncate">{branch.name}</h3>
+              <h3 className="font-bold text-sm sm:text-base truncate">{branch.name}</h3>
               <p className="text-xs text-muted-foreground font-mono">
                 {branch.code}
               </p>
@@ -414,7 +417,7 @@ function AddBranchDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-[95vw] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="w-5 h-5 text-amber-500" />
@@ -468,11 +471,11 @@ function AddBranchDialog({
               dir="ltr"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="flex items-center gap-2">
-                <Warehouse className="w-4 h-4 text-stone-500" />
-                <div>
+              <div className="flex items-center gap-2 min-w-0">
+                <Warehouse className="w-4 h-4 text-stone-500 shrink-0" />
+                <div className="min-w-0">
                   <Label className="cursor-pointer">انبار</Label>
                   <p className="text-xs text-muted-foreground">این مکان انبار است</p>
                 </div>
@@ -480,9 +483,9 @@ function AddBranchDialog({
               <Switch checked={isWarehouse} onCheckedChange={setIsWarehouse} />
             </div>
             <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="flex items-center gap-2">
-                <Crown className="w-4 h-4 text-amber-500" />
-                <div>
+              <div className="flex items-center gap-2 min-w-0">
+                <Crown className="w-4 h-4 text-amber-500 shrink-0" />
+                <div className="min-w-0">
                   <Label className="cursor-pointer">شعبه مرکزی</Label>
                   <p className="text-xs text-muted-foreground">شعبه اصلی فروشگاه</p>
                 </div>
@@ -603,10 +606,10 @@ function TransfersTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 flex-wrap">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-full sm:w-44">
               <SelectValue placeholder="همه وضعیت‌ها" />
             </SelectTrigger>
             <SelectContent>
@@ -617,9 +620,9 @@ function TransfersTab() {
               <SelectItem value="cancelled">لغو شده</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+          <Button variant="outline" size="sm" onClick={load} disabled={loading} className="shrink-0">
             <RefreshCw className={`w-4 h-4 ml-1 ${loading ? "animate-spin" : ""}`} />
-            به‌روزرسانی
+            <span className="hidden sm:inline">به‌روزرسانی</span>
           </Button>
         </div>
         <Button
@@ -628,7 +631,7 @@ function TransfersTab() {
             loadProducts();
             setShowCreate(true);
           }}
-          className="bg-amber-500 hover:bg-amber-600 text-white"
+          className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
         >
           <Plus className="w-4 h-4 ml-1" />
           انتقال جدید
@@ -649,16 +652,16 @@ function TransfersTab() {
               هیچ انتقالی یافت نشد
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto scrollbar-thin">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>شماره ارجاع</TableHead>
-                    <TableHead>مبدا → مقصد</TableHead>
-                    <TableHead>اقلام</TableHead>
-                    <TableHead>وضعیت</TableHead>
-                    <TableHead>تاریخ</TableHead>
-                    <TableHead className="text-left">عملیات</TableHead>
+                    <TableHead className="whitespace-nowrap">شماره ارجاع</TableHead>
+                    <TableHead className="whitespace-nowrap">مبدا → مقصد</TableHead>
+                    <TableHead className="whitespace-nowrap">اقلام</TableHead>
+                    <TableHead className="whitespace-nowrap">وضعیت</TableHead>
+                    <TableHead className="whitespace-nowrap">تاریخ</TableHead>
+                    <TableHead className="text-left whitespace-nowrap">عملیات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -880,7 +883,7 @@ function CreateTransferDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ArrowRightLeft className="w-5 h-5 text-amber-500" />
@@ -891,7 +894,7 @@ function CreateTransferDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 max-h-[70vh] overflow-y-auto pl-1">
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto scrollbar-thin pl-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>شعبه مبدا *</Label>
@@ -939,7 +942,7 @@ function CreateTransferDialog({
 
           <div className="space-y-2">
             <Label>کالاهای منتقل‌شونده</Label>
-            <div className="border rounded-lg max-h-64 overflow-y-auto custom-scrollbar">
+            <div className="border rounded-lg max-h-64 overflow-y-auto scrollbar-thin">
               {products.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
                   محصولی یافت نشد
@@ -1080,7 +1083,7 @@ function MetricsTab() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i}>
             <CardContent className="p-6 h-40">
@@ -1105,17 +1108,17 @@ function MetricsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           مقایسه فروش شعبات در ۳۰ روز گذشته
         </p>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+        <Button variant="outline" size="sm" onClick={load} disabled={loading} className="shrink-0 self-start sm:self-auto">
           <RefreshCw className={`w-4 h-4 ml-1 ${loading ? "animate-spin" : ""}`} />
           به‌روزرسانی
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {branches.map((b, idx) => {
           const pct = maxSales > 0 ? Math.round((b.sales / maxSales) * 100) : 0;
           const rank = idx + 1;
@@ -1129,11 +1132,11 @@ function MetricsTab() {
                   : ""
               }
             >
-              <CardContent className="p-5 space-y-4">
+              <CardContent className="p-4 sm:p-5 space-y-3 sm:space-y-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3 min-w-0">
                     <div
-                      className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 font-bold ${
+                      className={`w-10 h-10 sm:w-11 sm:h-11 rounded-lg flex items-center justify-center shrink-0 font-bold ${
                         isTop
                           ? "bg-amber-500 text-white"
                           : rank === 2
@@ -1146,12 +1149,12 @@ function MetricsTab() {
                       {isTop ? <Crown className="w-5 h-5" /> : toPersianDigits(rank)}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-bold text-base truncate">{b.name}</h3>
+                      <h3 className="font-bold text-sm sm:text-base truncate">{b.name}</h3>
                       <p className="text-xs text-muted-foreground font-mono">{b.code}</p>
                     </div>
                   </div>
                   {b.isMain && (
-                    <Badge className="bg-amber-500 text-white gap-1">
+                    <Badge className="bg-amber-500 text-white gap-1 shrink-0">
                       <Crown className="w-3 h-3" />
                       مرکزی
                     </Badge>
@@ -1160,7 +1163,7 @@ function MetricsTab() {
 
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">فروش ۳۰ روز</p>
-                  <p className="text-xl font-bold">{formatToman(b.sales)}</p>
+                  <p className="text-lg sm:text-xl font-bold">{formatToman(b.sales)}</p>
                 </div>
 
                 <div className="space-y-1">

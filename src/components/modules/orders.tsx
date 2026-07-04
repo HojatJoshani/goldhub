@@ -477,22 +477,22 @@ function ManufacturingTimeline({
     : null;
 
   return (
-    <div className="relative pr-2">
+    <div className="relative pr-1 sm:pr-2">
       {/* Cancelled banner */}
       {isCancelled && (
-        <div className="mb-4 rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3 flex items-start gap-2">
+        <div className="mb-3 sm:mb-4 rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3 flex items-start gap-2">
           <Ban className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
-          <div className="text-sm">
+          <div className="text-sm min-w-0">
             <p className="font-semibold text-red-700 dark:text-red-300">
               این سفارش لغو شده است
             </p>
             {cancelledTimelineEntry?.note && (
-              <p className="text-red-600 dark:text-red-400 text-xs mt-1">
+              <p className="text-red-600 dark:text-red-400 text-xs mt-1 break-words">
                 {cancelledTimelineEntry.note}
               </p>
             )}
             {cancelledTimelineEntry && (
-              <p className="text-red-500/80 dark:text-red-400/80 text-xs mt-1">
+              <p className="text-red-500/80 dark:text-red-400/80 text-xs mt-1 ltr-num">
                 {formatPersianDateTime(cancelledTimelineEntry.createdAt)}
               </p>
             )}
@@ -536,12 +536,12 @@ function ManufacturingTimeline({
           return (
             <li
               key={stage}
-              className="relative flex gap-3 pb-6 last:pb-0"
+              className="relative flex gap-2 sm:gap-3 pb-4 sm:pb-6 last:pb-0"
             >
               {/* Connecting line — sits BEHIND the circle */}
               {!isLast && (
                 <span
-                  className={`absolute top-9 right-[15px] w-0.5 h-[calc(100%-1.5rem)] ${
+                  className={`absolute top-7 sm:top-9 right-[13px] sm:right-[15px] w-0.5 h-[calc(100%-1.25rem)] sm:h-[calc(100%-1.5rem)] ${
                     lineState === "completed"
                       ? tokens.line
                       : tokens.lineUpcoming
@@ -553,7 +553,7 @@ function ManufacturingTimeline({
               {/* Circle with icon */}
               <div className="relative shrink-0 z-10">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all ${
                     stageState === "completed"
                       ? `${tokens.completed} ${tokens.completedIcon}`
                       : stageState === "current"
@@ -562,9 +562,9 @@ function ManufacturingTimeline({
                   }`}
                 >
                   {stageState === "completed" ? (
-                    <CheckCircle className="w-4 h-4" />
+                    <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   ) : (
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   )}
                 </div>
                 {stageState === "current" && (
@@ -576,10 +576,10 @@ function ManufacturingTimeline({
               </div>
 
               {/* Stage content */}
-              <div className="flex-1 min-w-0 pt-1">
-                <div className="flex flex-wrap items-center gap-2">
+              <div className="flex-1 min-w-0 pt-0.5 sm:pt-1">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <span
-                    className={`font-medium text-sm ${
+                    className={`font-medium text-xs sm:text-sm ${
                       stageState === "upcoming"
                         ? tokens.textUpcoming
                         : tokens.text
@@ -596,16 +596,16 @@ function ManufacturingTimeline({
                     </Badge>
                   )}
                   {stageState === "completed" && entry && (
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[10px] text-muted-foreground ltr-num">
                       {formatPersianDateTime(entry.createdAt)}
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
                   {cfg.description}
                 </p>
                 {entry?.note && (
-                  <p className="text-xs text-foreground/80 bg-muted/60 dark:bg-muted/30 rounded-md px-2 py-1 mt-1.5 border border-border/50">
+                  <p className="text-[11px] sm:text-xs text-foreground/80 bg-muted/60 dark:bg-muted/30 rounded-md px-2 py-1 mt-1.5 border border-border/50 break-words">
                     {entry.note}
                   </p>
                 )}
@@ -821,7 +821,7 @@ export function OrdersModule() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {loading && !stats ? (
           Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
@@ -868,7 +868,7 @@ export function OrdersModule() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
             {/* Type tabs */}
             <div className="flex items-center gap-1 bg-muted rounded-lg p-1 overflow-x-auto">
@@ -969,7 +969,118 @@ export function OrdersModule() {
       {/* Orders Table */}
       <Card>
         <CardContent className="p-0">
-          <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+          {/* Mobile card layout (< md) */}
+          <div className="md:hidden divide-y max-h-[60vh] overflow-y-auto scrollbar-thin">
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={`sk-${i}`} className="p-3">
+                  <Skeleton className="h-24 w-full" />
+                </div>
+              ))
+            ) : orders.length === 0 ? (
+              <div className="text-center text-muted-foreground py-16">
+                <div className="flex flex-col items-center gap-2">
+                  <ClipboardList className="w-10 h-10 text-muted-foreground/40" />
+                  <p>سفارشی یافت نشد</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => {
+                      setEditing(null);
+                      setFormOpen(true);
+                    }}
+                  >
+                    <Plus className="w-4 h-4" />
+                    ثبت اولین سفارش
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              orders.map((o) => {
+                const ds = deadlineStatus(o.deadline, o.status);
+                return (
+                  <div
+                    key={o.id}
+                    className="p-3 cursor-pointer hover:bg-amber-50/50 dark:hover:bg-amber-950/10 transition-colors animate-fade-in"
+                    onClick={() => openDetail(o)}
+                  >
+                    {/* Top row: order number + type + status */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-mono text-xs font-semibold text-amber-700 dark:text-amber-400 ltr-num" dir="ltr">
+                          {o.orderNumber}
+                        </span>
+                        <TypeBadge type={o.type} />
+                      </div>
+                      <StatusBadge status={o.status} />
+                    </div>
+                    {/* Title */}
+                    <p className="font-medium text-sm truncate mb-1">{o.title}</p>
+                    {o.description && (
+                      <p className="text-xs text-muted-foreground truncate mb-2">
+                        {o.description}
+                      </p>
+                    )}
+                    {/* Customer + deadline + cost */}
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-xs mb-2">
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-muted-foreground">مشتری</p>
+                        {o.customer ? (
+                          <p className="font-medium truncate">{o.customer.name}</p>
+                        ) : (
+                          <p className="text-muted-foreground">بدون مشتری</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">مهلت تحویل</p>
+                        <DeadlineCell deadline={o.deadline} status={o.status} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">وزن / عیار</p>
+                        <p className="font-medium">
+                          {formatWeight(o.goldWeight)} · {karatLabel(o.karat)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">هزینه تخمینی</p>
+                        <p className="font-medium text-amber-600 dark:text-amber-400">
+                          {formatToman(o.estimatedCost)}
+                        </p>
+                      </div>
+                    </div>
+                    {/* Action buttons */}
+                    <div
+                      className="flex items-center justify-end gap-1 pt-2 border-t border-border/50"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9"
+                        title="مشاهده جزئیات"
+                        onClick={() => openDetail(o)}
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9 text-destructive hover:bg-destructive/10"
+                        title="حذف"
+                        onClick={() => setDeleteTarget(o)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop table view (>= md) */}
+          <div className="hidden md:block max-h-[60vh] overflow-y-auto scrollbar-thin">
             <Table>
               <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur z-10">
                 <TableRow>
@@ -1136,8 +1247,8 @@ export function OrdersModule() {
 
           {/* Pagination */}
           {total > 0 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t">
-              <p className="text-xs text-muted-foreground">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-3 sm:px-4 py-3 border-t">
+              <p className="text-xs text-muted-foreground text-center sm:text-right">
                 نمایش{" "}
                 <span className="font-medium text-foreground">
                   {toPersianDigits((page - 1) * PAGE_SIZE + 1)}
@@ -1162,7 +1273,7 @@ export function OrdersModule() {
                   <ChevronRight className="w-4 h-4" />
                   قبلی
                 </Button>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground tabular-nums">
                   {toPersianDigits(page)} / {toPersianDigits(totalPages)}
                 </span>
                 <Button
@@ -1182,7 +1293,7 @@ export function OrdersModule() {
 
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-thin">
           {loadingDetail || !selected ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
@@ -1202,7 +1313,7 @@ export function OrdersModule() {
 
       {/* New / Edit Order Dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin">
           <OrderForm
             editing={editing}
             onSubmit={handleFormSubmit}
@@ -1350,10 +1461,10 @@ function OrderDetailContent({
       </DialogHeader>
 
       {/* Summary info grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mt-2">
         {/* Customer card */}
         <Card className="bg-muted/30 dark:bg-muted/10">
-          <CardContent className="p-4 space-y-3">
+          <CardContent className="p-3 sm:p-4 space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400">
               <User className="w-4 h-4" />
               اطلاعات مشتری
@@ -1399,7 +1510,7 @@ function OrderDetailContent({
 
         {/* Specs card */}
         <Card className="bg-muted/30 dark:bg-muted/10">
-          <CardContent className="p-4 space-y-3">
+          <CardContent className="p-3 sm:p-4 space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400">
               <Gem className="w-4 h-4" />
               مشخصات سفارش
@@ -1445,7 +1556,7 @@ function OrderDetailContent({
       </div>
 
       {/* Deadline + assignee + total days */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-1">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mt-1">
         <div className="rounded-lg border border-border p-3 flex items-center gap-3">
           <Calendar className="w-5 h-5 text-amber-500" />
           <div>
@@ -1502,13 +1613,13 @@ function OrderDetailContent({
         </div>
       )}
 
-      <Separator className="my-4" />
+      <Separator className="my-3 sm:my-4" />
 
       {/* Manufacturing Workflow Timeline */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="font-semibold flex items-center gap-2">
+            <h3 className="font-semibold flex items-center gap-2 text-base sm:text-lg">
               <Hammer className="w-4 h-4 text-amber-500" />
               خط زمانی ساخت
             </h3>
@@ -1517,14 +1628,14 @@ function OrderDetailContent({
             </p>
           </div>
         </div>
-        <div className="rounded-lg border border-border p-4 bg-gradient-to-bl from-amber-50/50 to-transparent dark:from-amber-950/10">
+        <div className="rounded-lg border border-border p-3 sm:p-4 bg-gradient-to-bl from-amber-50/50 to-transparent dark:from-amber-950/10 overflow-x-hidden">
           <ManufacturingTimeline order={order} />
         </div>
       </div>
 
       {/* Action: advance status */}
       {!isCancelled && !isDelivered && nextStage && (
-        <div className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20 p-4 mt-3 space-y-3">
+        <div className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20 p-3 sm:p-4 mt-3 space-y-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
@@ -1835,7 +1946,7 @@ function OrderForm({
         </DialogDescription>
       </DialogHeader>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-2">
         {/* Type */}
         <div className="space-y-1.5">
           <Label>نوع سفارش *</Label>

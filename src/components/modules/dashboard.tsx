@@ -104,16 +104,16 @@ export function DashboardModule() {
 
   if (loading || !data) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="space-y-4 sm:space-y-6 animate-fade-in">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i} className="animate-pulse">
-              <CardContent className="p-6 h-32" />
+              <CardContent className="p-3 sm:p-5 h-24 sm:h-32" />
             </Card>
           ))}
         </div>
         <Card className="animate-pulse">
-          <CardContent className="p-6 h-80" />
+          <CardContent className="p-3 sm:p-6 h-64 sm:h-80" />
         </Card>
       </div>
     );
@@ -139,19 +139,19 @@ export function DashboardModule() {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Crown className="w-6 h-6 text-amber-500" />
-            داشبورد مدیریتی
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
+            <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 shrink-0" />
+            <span className="truncate">داشبورد مدیریتی</span>
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1">
             خلاصه عملکرد فروشگاه در ۳۰ روز گذشته
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={load}>
+        <Button variant="outline" size="sm" onClick={load} className="shrink-0">
           <ArrowLeft className="w-4 h-4 ml-1" />
           به‌روزرسانی
         </Button>
@@ -161,24 +161,25 @@ export function DashboardModule() {
       <Card className="overflow-hidden border-amber-200 dark:border-amber-900">
         <CardContent className="p-0">
           <div className="flex items-center bg-gradient-to-l from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30">
-            <div className="bg-amber-500 text-white px-4 py-2 font-bold text-sm flex items-center gap-2 shrink-0">
+            <div className="bg-amber-500 text-white px-3 sm:px-4 py-2 font-bold text-xs sm:text-sm flex items-center gap-2 shrink-0">
               <Crown className="w-4 h-4" />
-              قیمت زنده طلا
+              <span className="hidden xs:inline">قیمت زنده طلا</span>
+              <span className="xs:hidden">طلا</span>
             </div>
-            <ScrollArea className="flex-1">
-              <div className="flex items-center gap-6 px-4 py-2 whitespace-nowrap">
+            <ScrollArea className="flex-1 overflow-hidden">
+              <div className="flex items-center gap-4 sm:gap-6 px-3 sm:px-4 py-2 whitespace-nowrap">
                 {goldPrices.map((g) => (
-                  <div key={g.karat} className="flex items-center gap-2 text-sm">
+                  <div key={g.karat} className="flex items-center gap-2 text-xs sm:text-sm shrink-0">
                     <Badge variant="outline" className="border-amber-400 text-amber-700 dark:text-amber-300">
                       {karatLabel(g.karat)}
                     </Badge>
-                    <span className="font-semibold">{formatNumber(g.price)}</span>
-                    <span className="text-muted-foreground text-xs">تومان/گرم</span>
+                    <span className="font-semibold tabular-nums ltr-num">{formatNumber(g.price)}</span>
+                    <span className="text-muted-foreground text-[10px] sm:text-xs">ت/گرم</span>
                   </div>
                 ))}
-                <div className="flex items-center gap-1 text-xs text-green-600">
+                <div className="flex items-center gap-1 text-[10px] sm:text-xs text-green-600 shrink-0">
                   <TrendingUp className="w-3 h-3" />
-                  به‌روزرسانی {formatRelativeTime(goldPrices[0]?.updatedAt)}
+                  {formatRelativeTime(goldPrices[0]?.updatedAt)}
                 </div>
               </div>
             </ScrollArea>
@@ -187,7 +188,7 @@ export function DashboardModule() {
       </Card>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard
           title="فروش امروز"
           value={formatToman(kpis.todaySales)}
@@ -220,135 +221,141 @@ export function DashboardModule() {
       </div>
 
       {/* Charts row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Sales chart */}
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg">نمودار فروش</CardTitle>
-            <CardDescription>روند فروش در ۱۴ روز اخیر</CardDescription>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">نمودار فروش</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">روند فروش در ۱۴ روز اخیر</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={dailyChartData}>
-                <defs>
-                  <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#D4A017" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#D4A017" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 11 }} />
-                <YAxis
-                  className="text-xs"
-                  tick={{ fontSize: 11 }}
-                  tickFormatter={(v) => `${toPersianDigits(Math.round(v / 1000000))}م`}
-                  width={50}
-                />
-                <Tooltip
-                  formatter={(value: number) => formatToman(value)}
-                  contentStyle={{ direction: "rtl", borderRadius: "8px" }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="فروش"
-                  stroke="#D4A017"
-                  strokeWidth={2}
-                  fill="url(#salesGrad)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <div className="chart-container min-h-[200px] sm:min-h-[280px]">
+              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                <AreaChart data={dailyChartData}>
+                  <defs>
+                    <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#D4A017" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#D4A017" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+                  <YAxis
+                    className="text-xs"
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={(v) => `${toPersianDigits(Math.round(v / 1000000))}م`}
+                    width={45}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => formatToman(value)}
+                    contentStyle={{ direction: "rtl", borderRadius: "8px", fontSize: "12px" }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="فروش"
+                    stroke="#D4A017"
+                    strokeWidth={2}
+                    fill="url(#salesGrad)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
         {/* Karat distribution */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">توزیع عیارها</CardTitle>
-            <CardDescription>بر اساس وزن طلا</CardDescription>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">توزیع عیارها</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">بر اساس وزن طلا</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={karatPieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={90}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {karatPieData.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: number) => formatWeight(value)}
-                  contentStyle={{ direction: "rtl", borderRadius: "8px" }}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: "12px", direction: "rtl" }}
-                  iconType="circle"
-                />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <div className="chart-container min-h-[200px] sm:min-h-[280px]">
+              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                <PieChart>
+                  <Pie
+                    data={karatPieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {karatPieData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number) => formatWeight(value)}
+                    contentStyle={{ direction: "rtl", borderRadius: "8px", fontSize: "12px" }}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: "11px", direction: "rtl" }}
+                    iconType="circle"
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Charts row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Top products */}
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg">پرفروش‌ترین محصولات</CardTitle>
-            <CardDescription>۳۰ روز گذشته</CardDescription>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">پرفروش‌ترین محصولات</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">۳۰ روز گذشته</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={charts.topProducts} layout="vertical" margin={{ right: 20, left: 80 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={false} />
-                <XAxis
-                  type="number"
-                  tickFormatter={(v) => `${toPersianDigits(Math.round(v / 1000000))}م`}
-                  tick={{ fontSize: 11 }}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={140}
-                  tick={{ fontSize: 11 }}
-                  tickFormatter={(v: string) => v.length > 18 ? v.slice(0, 18) + "…" : v}
-                />
-                <Tooltip
-                  formatter={(value: number) => formatToman(value)}
-                  contentStyle={{ direction: "rtl", borderRadius: "8px" }}
-                />
-                <Bar dataKey="revenue" name="درآمد" fill="#D4A017" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <div className="chart-container min-h-[200px] sm:min-h-[260px]">
+              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                <BarChart data={charts.topProducts} layout="vertical" margin={{ right: 10, left: 10, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={false} />
+                  <XAxis
+                    type="number"
+                    tickFormatter={(v) => `${toPersianDigits(Math.round(v / 1000000))}م`}
+                    tick={{ fontSize: 10 }}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={100}
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={(v: string) => v.length > 14 ? v.slice(0, 14) + "…" : v}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => formatToman(value)}
+                    contentStyle={{ direction: "rtl", borderRadius: "8px", fontSize: "12px" }}
+                  />
+                  <Bar dataKey="revenue" name="درآمد" fill="#D4A017" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
         {/* Payment methods */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">روش‌های پرداخت</CardTitle>
-            <CardDescription>توزیع بر اساس مبلغ</CardDescription>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">روش‌های پرداخت</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">توزیع بر اساس مبلغ</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <div className="space-y-3 sm:space-y-4">
               {paymentData.map((p, i) => {
                 const total = paymentData.reduce((s, x) => s + x["مبلغ"], 0);
                 const pct = total > 0 ? Math.round((p["مبلغ"] / total) * 100) : 0;
                 return (
                   <div key={i}>
-                    <div className="flex justify-between text-sm mb-1">
+                    <div className="flex justify-between text-xs sm:text-sm mb-1">
                       <span className="font-medium">{p.name}</span>
-                      <span className="text-muted-foreground">{toPersianDigits(pct)}٪</span>
+                      <span className="text-muted-foreground tabular-nums">{toPersianDigits(pct)}٪</span>
                     </div>
                     <Progress value={pct} className="h-2" />
-                    <p className="text-xs text-muted-foreground mt-1">{formatToman(p["مبلغ"])}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">{formatToman(p["مبلغ"])}</p>
                   </div>
                 );
               })}
@@ -361,32 +368,32 @@ export function DashboardModule() {
       </div>
 
       {/* Bottom row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Recent sales */}
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg">آخرین فروش‌ها</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">آخرین فروش‌ها</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="max-h-96">
-              <div className="space-y-2">
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <ScrollArea className="max-h-80 sm:max-h-96">
+              <div className="space-y-1.5 sm:space-y-2">
                 {recentSales.map((sale) => (
                   <div
                     key={sale.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center shrink-0">
-                      <ShoppingBag className="w-5 h-5 text-amber-600" />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center shrink-0">
+                      <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{sale.customer}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-medium text-xs sm:text-sm truncate">{sale.customer}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                         {sale.invoiceNumber} · {PAYMENT_LABELS[sale.paymentMethod] || sale.paymentMethod}
                       </p>
                     </div>
                     <div className="text-left shrink-0">
-                      <p className="font-semibold text-sm">{formatToman(sale.total)}</p>
-                      <p className="text-xs text-muted-foreground">{formatRelativeTime(sale.createdAt)}</p>
+                      <p className="font-semibold text-xs sm:text-sm tabular-nums">{formatToman(sale.total)}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">{formatRelativeTime(sale.createdAt)}</p>
                     </div>
                   </div>
                 ))}
@@ -400,19 +407,19 @@ export function DashboardModule() {
 
         {/* Alerts */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               <Bell className="w-5 h-5 text-amber-500" />
               هشدارها
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="max-h-96">
-              <div className="space-y-2">
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <ScrollArea className="max-h-80 sm:max-h-96">
+              <div className="space-y-1.5 sm:space-y-2">
                 {alerts.map((alert) => (
                   <div
                     key={alert.id}
-                    className={`p-3 rounded-lg border text-sm ${
+                    className={`p-2 sm:p-3 rounded-lg border text-xs sm:text-sm ${
                       alert.severity === "critical"
                         ? "bg-destructive/10 border-destructive/20"
                         : alert.severity === "warning"
@@ -430,9 +437,9 @@ export function DashboardModule() {
                             : "text-blue-500"
                         }`}
                       />
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-medium">{alert.title}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{alert.message}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">{alert.message}</p>
                       </div>
                     </div>
                   </div>
@@ -449,25 +456,25 @@ export function DashboardModule() {
       {/* Low stock */}
       {lowStockProducts.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-500" />
-              محصولات رو به اتمام
+              <span>محصولات رو به اتمام</span>
               <Badge variant="secondary">{toPersianDigits(lowStockProducts.length)} مورد</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               {lowStockProducts.map((p) => (
                 <div
                   key={p.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20"
+                  className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20"
                 >
-                  <div>
-                    <p className="font-medium text-sm">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{karatLabel(p.karat)}</p>
+                  <div className="min-w-0">
+                    <p className="font-medium text-xs sm:text-sm truncate">{p.name}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">{karatLabel(p.karat)}</p>
                   </div>
-                  <Badge variant="destructive">{toPersianDigits(p.stock)} عدد</Badge>
+                  <Badge variant="destructive" className="shrink-0 tabular-nums">{toPersianDigits(p.stock)} عدد</Badge>
                 </div>
               ))}
             </div>
@@ -502,21 +509,21 @@ function KpiCard({
 
   return (
     <Card>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${accentColors[accent]}`}>
-            <Icon className="w-5 h-5" />
+      <CardContent className="p-3 sm:p-5">
+        <div className="flex items-start justify-between mb-2 sm:mb-3">
+          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${accentColors[accent]}`}>
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           {growth !== undefined && (
-            <div className={`flex items-center gap-1 text-xs font-medium ${growth >= 0 ? "text-green-600" : "text-destructive"}`}>
+            <div className={`flex items-center gap-1 text-[10px] sm:text-xs font-medium ${growth >= 0 ? "text-green-600" : "text-destructive"}`}>
               {growth >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
               {toPersianDigits(Math.abs(growth))}٪
             </div>
           )}
         </div>
-        <p className="text-sm text-muted-foreground mb-1">{title}</p>
-        <p className="text-xl font-bold truncate">{value}</p>
-        {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+        <p className="text-[11px] sm:text-sm text-muted-foreground mb-1 truncate">{title}</p>
+        <p className="text-base sm:text-xl font-bold truncate tabular-nums">{value}</p>
+        {subtitle && <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">{subtitle}</p>}
       </CardContent>
     </Card>
   );

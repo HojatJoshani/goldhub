@@ -342,7 +342,7 @@ export function CustomersModule() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           title="تعداد مشتریان"
           value={stats ? toPersianDigits(stats.count) : "—"}
@@ -413,9 +413,9 @@ export function CustomersModule() {
                           target="_blank"
                           rel="noopener noreferrer"
                           title="ارسال تبریک در واتساپ"
-                          className="w-7 h-7 rounded-md flex items-center justify-center text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors"
+                          className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-md flex items-center justify-center text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors"
                         >
-                          <MessageCircle className="w-3.5 h-3.5" />
+                          <MessageCircle className="w-4 h-4" />
                         </a>
                       )}
                     </div>
@@ -452,7 +452,7 @@ export function CustomersModule() {
               )}
             </div>
             <Select value={sort} onValueChange={setSort}>
-              <SelectTrigger className="sm:w-56">
+              <SelectTrigger className="w-full sm:w-56">
                 <SelectValue placeholder="مرتب‌سازی" />
               </SelectTrigger>
               <SelectContent>
@@ -479,7 +479,103 @@ export function CustomersModule() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="max-h-[28rem] overflow-y-auto custom-scrollbar">
+          {/* Mobile card layout (< md) */}
+          <div className="md:hidden divide-y max-h-[28rem] overflow-y-auto scrollbar-thin">
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-3">
+                  <Skeleton className="h-20 w-full" />
+                </div>
+              ))
+            ) : customers.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">هیچ مشتری‌ای یافت نشد</p>
+              </div>
+            ) : (
+              customers.map((c) => {
+                const tier = getLoyaltyTier(c.loyaltyPoints);
+                return (
+                  <div
+                    key={c.id}
+                    className="p-3 hover:bg-amber-50/60 dark:hover:bg-amber-950/20 cursor-pointer animate-fade-in"
+                    onClick={() => openDetail(c)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center text-amber-700 dark:text-amber-300 text-sm font-bold shrink-0">
+                        {c.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-medium truncate text-sm">{c.name}</p>
+                          <Badge
+                            variant="outline"
+                            className={`gap-1 shrink-0 ${tier.color}`}
+                            title={`امتیاز: ${toPersianDigits(c.loyaltyPoints)}`}
+                          >
+                            {tier.icon}
+                            {tier.label}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          {c.phone ? (
+                            <span dir="ltr" className="ltr-num">{toPersianDigits(c.phone)}</span>
+                          ) : (
+                            <span>بدون تلفن</span>
+                          )}
+                          <span aria-hidden>·</span>
+                          <span>{toPersianDigits(c.totalOrders)} سفارش</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 mt-2">
+                          <div className="min-w-0">
+                            <p className="text-[10px] text-muted-foreground">مجموع خرید</p>
+                            <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 truncate">
+                              {formatToman(c.totalSpent)}
+                            </p>
+                          </div>
+                          <div
+                            className="flex items-center gap-1 shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9"
+                              onClick={() => openDetail(c)}
+                              title="مشاهده"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9"
+                              onClick={() => openEdit(c)}
+                              title="ویرایش"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 text-destructive hover:text-destructive"
+                              onClick={() => setDeleteTarget(c)}
+                              title="حذف"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop table view (>= md) */}
+          <div className="hidden md:block max-h-[28rem] overflow-y-auto scrollbar-thin">
             <Table>
               <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
@@ -607,8 +703,8 @@ export function CustomersModule() {
 
           {/* Pagination */}
           {!loading && total > 0 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t">
-              <p className="text-xs text-muted-foreground">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-3 sm:px-4 py-3 border-t">
+              <p className="text-xs text-muted-foreground text-center sm:text-right">
                 نمایش{" "}
                 {toPersianDigits((page - 1) * PAGE_SIZE + 1)} تا{" "}
                 {toPersianDigits(Math.min(page * PAGE_SIZE, total))} از{" "}
@@ -624,7 +720,7 @@ export function CustomersModule() {
                   <ChevronRight className="w-4 h-4" />
                   قبلی
                 </Button>
-                <span className="text-sm px-2">
+                <span className="text-sm px-2 tabular-nums">
                   {toPersianDigits(page)} / {toPersianDigits(totalPages)}
                 </span>
                 <Button
@@ -644,7 +740,7 @@ export function CustomersModule() {
 
       {/* Detail Dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="w-5 h-5 text-amber-500" />
@@ -662,13 +758,13 @@ export function CustomersModule() {
           ) : selected ? (
             <div className="overflow-y-auto custom-scrollbar pr-1 -mr-1 space-y-4">
               {/* Profile */}
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-amber-50/60 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/50">
+              <div className="flex flex-col sm:flex-row items-start gap-4 p-4 rounded-lg bg-amber-50/60 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/50">
                 <div className="w-14 h-14 rounded-full bg-amber-200 dark:bg-amber-800 flex items-center justify-center text-amber-900 dark:text-amber-100 text-xl font-bold shrink-0">
                   {selected.name.charAt(0)}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 w-full">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-bold text-lg">{selected.name}</h3>
+                    <h3 className="font-bold text-base sm:text-lg">{selected.name}</h3>
                     {(() => {
                       const tier = getLoyaltyTier(selected.loyaltyPoints);
                       return (
@@ -679,7 +775,7 @@ export function CustomersModule() {
                       );
                     })()}
                   </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm">
                     <InfoLine
                       icon={<Phone className="w-3.5 h-3.5" />}
                       label="تلفن"
@@ -722,7 +818,7 @@ export function CustomersModule() {
               </div>
 
               {/* Stats summary */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 <MiniStat
                   label="مجموع خرید"
                   value={formatToman(selected.stats.totalSpent)}
@@ -801,34 +897,34 @@ export function CustomersModule() {
                       selected.sales.map((sale) => (
                         <div
                           key={sale.id}
-                          className="flex items-center gap-3 p-2.5 rounded-lg border bg-card hover:bg-muted/40 transition-colors"
+                          className="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg border bg-card hover:bg-muted/40 transition-colors"
                         >
-                          <div className="w-9 h-9 rounded-md bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center shrink-0">
+                          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center shrink-0">
                             <ShoppingBag className="w-4 h-4 text-amber-600" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-medium" dir="ltr">
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                              <span className="text-xs sm:text-sm font-medium ltr-num" dir="ltr">
                                 {sale.invoiceNumber}
                               </span>
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-[10px] sm:text-xs">
                                 {PAYMENT_LABELS[sale.paymentMethod] ||
                                   sale.paymentMethod}
                               </Badge>
                               <Badge
                                 variant="secondary"
-                                className="text-xs"
+                                className="text-[10px] sm:text-xs"
                               >
                                 {toPersianDigits(sale.items.length)} اقلام
                               </Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                               {formatPersianDate(sale.createdAt)} ·{" "}
                               {formatRelativeTime(sale.createdAt)}
                             </p>
                           </div>
                           <div className="text-left shrink-0">
-                            <p className="text-sm font-semibold">
+                            <p className="text-xs sm:text-sm font-semibold">
                               {formatToman(sale.total)}
                             </p>
                           </div>
@@ -1093,7 +1189,7 @@ function CustomerFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <DialogContent className="max-w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto scrollbar-thin">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {editing ? (
@@ -1116,7 +1212,7 @@ function CustomerFormDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="name">
                 نام <span className="text-destructive">*</span>

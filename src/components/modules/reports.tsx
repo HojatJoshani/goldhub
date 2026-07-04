@@ -444,31 +444,31 @@ export function ReportsModule() {
       </div>
 
       {/* HEADER */}
-      <div className="no-print flex flex-wrap items-center justify-between gap-3">
+      <div className="no-print flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-amber-500" />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500" />
             گزارشات و تحلیل‌ها
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1">
             تحلیل جامع عملکرد فروش، انبار، مشتریان، کارکنان و مالی
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-card border rounded-lg px-2.5 py-1.5">
-            <Calendar className="w-4 h-4 text-amber-500" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-1.5 bg-card border rounded-lg px-2.5 py-1.5 w-full sm:w-auto">
+            <Calendar className="w-4 h-4 text-amber-500 shrink-0" />
             <Input
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="h-7 w-[140px] border-0 px-1 text-xs"
+              className="h-7 flex-1 sm:flex-initial sm:w-[130px] border-0 px-1 text-xs"
             />
-            <span className="text-muted-foreground text-xs">تا</span>
+            <span className="text-muted-foreground text-xs shrink-0">تا</span>
             <Input
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="h-7 w-[140px] border-0 px-1 text-xs"
+              className="h-7 flex-1 sm:flex-initial sm:w-[130px] border-0 px-1 text-xs"
             />
           </div>
           <Select
@@ -477,7 +477,7 @@ export function ReportsModule() {
               setGroupBy(v as "day" | "week" | "month")
             }
           >
-            <SelectTrigger className="w-[120px] h-9">
+            <SelectTrigger className="w-full sm:w-[120px] h-9">
               <SelectValue placeholder="دسته‌بندی" />
             </SelectTrigger>
             <SelectContent>
@@ -486,19 +486,21 @@ export function ReportsModule() {
               <SelectItem value="month">ماهانه</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" onClick={handleExportCsv}>
-            <Download className="w-4 h-4 ml-1" />
-            خروجی CSV
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            className="bg-amber-500 hover:bg-amber-600"
-            onClick={() => window.print()}
-          >
-            <Printer className="w-4 h-4 ml-1" />
-            چاپ
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCsv} className="flex-1 sm:flex-initial">
+              <Download className="w-4 h-4 ml-1" />
+              <span className="hidden xs:inline">خروجی </span>CSV
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              className="bg-amber-500 hover:bg-amber-600 flex-1 sm:flex-initial"
+              onClick={() => window.print()}
+            >
+              <Printer className="w-4 h-4 ml-1" />
+              چاپ
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -540,26 +542,26 @@ export function ReportsModule() {
           setActiveTab(v as typeof activeTab)
         }
       >
-        <TabsList className="no-print flex-wrap h-auto">
-          <TabsTrigger value="sales" className="gap-1.5">
-            <ShoppingBag className="w-4 h-4" />
-            فروش
+        <TabsList className="no-print flex-wrap h-auto gap-1">
+          <TabsTrigger value="sales" className="gap-1.5 px-2.5 sm:px-3 text-xs sm:text-sm">
+            <ShoppingBag className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">فروش</span>
           </TabsTrigger>
-          <TabsTrigger value="inventory" className="gap-1.5">
-            <Package className="w-4 h-4" />
-            انبار
+          <TabsTrigger value="inventory" className="gap-1.5 px-2.5 sm:px-3 text-xs sm:text-sm">
+            <Package className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">انبار</span>
           </TabsTrigger>
-          <TabsTrigger value="customers" className="gap-1.5">
-            <Users className="w-4 h-4" />
-            مشتریان
+          <TabsTrigger value="customers" className="gap-1.5 px-2.5 sm:px-3 text-xs sm:text-sm">
+            <Users className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">مشتریان</span>
           </TabsTrigger>
-          <TabsTrigger value="staff" className="gap-1.5">
-            <UserCheck className="w-4 h-4" />
-            عملکرد کارکنان
+          <TabsTrigger value="staff" className="gap-1.5 px-2.5 sm:px-3 text-xs sm:text-sm">
+            <UserCheck className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">عملکرد کارکنان</span>
           </TabsTrigger>
-          <TabsTrigger value="financial" className="gap-1.5">
-            <Wallet className="w-4 h-4" />
-            مالی
+          <TabsTrigger value="financial" className="gap-1.5 px-2.5 sm:px-3 text-xs sm:text-sm">
+            <Wallet className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">مالی</span>
           </TabsTrigger>
         </TabsList>
 
@@ -628,12 +630,12 @@ function KpiCard({
   };
   return (
     <Card className="print-card">
-      <CardContent className="p-4 sm:p-5">
-        <div className="flex items-start justify-between mb-3">
+      <CardContent className="p-3 sm:p-5">
+        <div className="flex items-start justify-between mb-2 sm:mb-3">
           <div
-            className={`w-10 h-10 rounded-lg flex items-center justify-center ${accentColors[accent]}`}
+            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${accentColors[accent]}`}
           >
-            <Icon className="w-5 h-5" />
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           {growth !== undefined && (
             <div
@@ -650,10 +652,10 @@ function KpiCard({
             </div>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mb-1">{title}</p>
-        <p className="text-lg font-bold truncate">{value}</p>
+        <p className="text-[11px] sm:text-xs text-muted-foreground mb-1 truncate">{title}</p>
+        <p className="text-base sm:text-lg font-bold truncate">{value}</p>
         {subtitle && (
-          <p className="text-xs text-muted-foreground mt-1 truncate">{subtitle}</p>
+          <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 truncate">{subtitle}</p>
         )}
       </CardContent>
     </Card>
@@ -677,11 +679,11 @@ function ChartCard({
 }) {
   return (
     <Card className={`print-card ${className || ""}`}>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 p-4 sm:p-6 sm:pb-2">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            {Icon && <Icon className="w-4 h-4 text-amber-500" />}
-            {title}
+          <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+            {Icon && <Icon className="w-4 h-4 text-amber-500 shrink-0" />}
+            <span className="truncate">{title}</span>
           </CardTitle>
           {action}
         </div>
@@ -689,7 +691,7 @@ function ChartCard({
           <CardDescription className="text-xs">{description}</CardDescription>
         )}
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">{children}</CardContent>
     </Card>
   );
 }
@@ -721,7 +723,7 @@ function RefreshBtn({ onClick }: { onClick: () => void }) {
 
 function EmptyChart({ message }: { message: string }) {
   return (
-    <div className="h-[260px] flex items-center justify-center text-sm text-muted-foreground">
+    <div className="h-[220px] sm:h-[280px] flex items-center justify-center text-sm text-muted-foreground text-center px-4">
       {message}
     </div>
   );
@@ -786,7 +788,7 @@ function SalesTab({
   return (
     <div className="space-y-4">
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
           title="کل فروش"
           value={formatToman(summary.totalSales)}
@@ -818,7 +820,7 @@ function SalesTab({
       </div>
 
       {/* Charts Row 1: Sales line + Payment pie */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         <ChartCard
           title="روند فروش"
           description={`بر اساس ${
@@ -835,6 +837,7 @@ function SalesTab({
           {!hasData ? (
             <EmptyChart message="در این بازه فروشی ثبت نشده است" />
           ) : (
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={seriesChart} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                 <defs>
@@ -875,6 +878,7 @@ function SalesTab({
                 />
               </AreaChart>
             </ResponsiveContainer>
+            </div>
           )}
         </ChartCard>
 
@@ -886,6 +890,7 @@ function SalesTab({
           {!hasData ? (
             <EmptyChart message="داده‌ای موجود نیست" />
           ) : (
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
@@ -915,12 +920,13 @@ function SalesTab({
                 />
               </PieChart>
             </ResponsiveContainer>
+            </div>
           )}
         </ChartCard>
       </div>
 
       {/* Charts Row 2: Branch bar + Hour bar */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         <ChartCard
           title="مقایسه شعب"
           description="فروش بر اساس شعبه"
@@ -929,6 +935,7 @@ function SalesTab({
           {!hasData || branchChart.length === 0 ? (
             <EmptyChart message="داده‌ای موجود نیست" />
           ) : (
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart
                 data={branchChart}
@@ -965,6 +972,7 @@ function SalesTab({
                 />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           )}
         </ChartCard>
 
@@ -976,6 +984,7 @@ function SalesTab({
           {!hasData || hourChart.length === 0 ? (
             <EmptyChart message="داده‌ای موجود نیست" />
           ) : (
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart
                 data={hourChart}
@@ -1012,6 +1021,7 @@ function SalesTab({
                 />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           )}
         </ChartCard>
       </div>
@@ -1127,7 +1137,7 @@ function InventoryTab({
   return (
     <div className="space-y-4">
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
           title="ارزش انبار (خرید)"
           value={formatToman(summary.purchaseValue)}
@@ -1159,7 +1169,7 @@ function InventoryTab({
       </div>
 
       {/* Karat pie + Category bar */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         <ChartCard
           title="توزیع عیارها"
           description="بر اساس وزن طلا"
@@ -1169,6 +1179,7 @@ function InventoryTab({
           {karatChart.length === 0 ? (
             <EmptyChart message="داده‌ای موجود نیست" />
           ) : (
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
@@ -1198,6 +1209,7 @@ function InventoryTab({
                 />
               </PieChart>
             </ResponsiveContainer>
+            </div>
           )}
         </ChartCard>
 
@@ -1209,6 +1221,7 @@ function InventoryTab({
           {categoryChart.length === 0 ? (
             <EmptyChart message="داده‌ای موجود نیست" />
           ) : (
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height={280}>
               <BarChart
                 data={categoryChart}
@@ -1254,12 +1267,13 @@ function InventoryTab({
                 />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           )}
         </ChartCard>
       </div>
 
       {/* Stock status donut + Aging bar */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         <ChartCard
           title="وضعیت موجودی"
           description="توزیع محصولات بر اساس وضعیت"
@@ -1268,6 +1282,7 @@ function InventoryTab({
           {stockChart.every((s) => s["تعداد"] === 0) ? (
             <EmptyChart message="داده‌ای موجود نیست" />
           ) : (
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
@@ -1296,6 +1311,7 @@ function InventoryTab({
                 />
               </PieChart>
             </ResponsiveContainer>
+            </div>
           )}
         </ChartCard>
 
@@ -1307,6 +1323,7 @@ function InventoryTab({
           {agingChart.every((a) => a["تعداد"] === 0) ? (
             <EmptyChart message="داده‌ای موجود نیست" />
           ) : (
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart
                 data={agingChart}
@@ -1346,6 +1363,7 @@ function InventoryTab({
                 />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           )}
         </ChartCard>
       </div>
@@ -1463,7 +1481,7 @@ function CustomersTab({
   return (
     <div className="space-y-4">
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
           title="کل مشتریان"
           value={toPersianDigits(summary.totalCustomers) + " نفر"}
@@ -1497,7 +1515,7 @@ function CustomersTab({
       </div>
 
       {/* New customers trend + Segment pie */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         <ChartCard
           title="روند مشتریان جدید"
           description="۱۴ روز گذشته"
@@ -1508,6 +1526,7 @@ function CustomersTab({
           {trendChart.every((t) => t["مشتری جدید"] === 0) ? (
             <EmptyChart message="در این بازه مشتری جدیدی ثبت نشده" />
           ) : (
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart
                 data={trendChart}
@@ -1553,6 +1572,7 @@ function CustomersTab({
                 />
               </AreaChart>
             </ResponsiveContainer>
+            </div>
           )}
         </ChartCard>
 
@@ -1564,6 +1584,7 @@ function CustomersTab({
           {segmentChart.length === 0 ? (
             <EmptyChart message="داده‌ای موجود نیست" />
           ) : (
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
@@ -1592,18 +1613,20 @@ function CustomersTab({
                 />
               </PieChart>
             </ResponsiveContainer>
+            </div>
           )}
         </ChartCard>
       </div>
 
       {/* Repeat rate gauge + Top customers table */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         <ChartCard
           title="نرخ تکرار خرید"
           description="درصد مشتریان با بیش از یک خرید"
           icon={Activity}
         >
           <div className="relative">
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height={220}>
               <RadialBarChart
                 cx="50%"
@@ -1629,6 +1652,7 @@ function CustomersTab({
                 />
               </RadialBarChart>
             </ResponsiveContainer>
+            </div>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <p className="text-3xl font-bold text-amber-600">
                 {toPersianDigits(summary.repeatRate)}٪
@@ -1751,7 +1775,7 @@ function StaffTab({
   return (
     <div className="space-y-4">
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
           title="کل کارکنان"
           value={toPersianDigits(summary.totalStaff) + " نفر"}
@@ -1804,6 +1828,7 @@ function StaffTab({
         {staffChart.length === 0 ? (
           <EmptyChart message="در این بازه فروشی ثبت نشده است" />
         ) : (
+          <div className="chart-container min-h-[220px] sm:min-h-[300px]">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart
               data={staffChart}
@@ -1855,6 +1880,7 @@ function StaffTab({
               />
             </BarChart>
           </ResponsiveContainer>
+          </div>
         )}
       </ChartCard>
 
@@ -1980,7 +2006,7 @@ function FinancialTab({
   return (
     <div className="space-y-4">
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
           title="درآمد (۳۰ روز)"
           value={formatToman(summary.revenue)}
@@ -2014,7 +2040,7 @@ function FinancialTab({
       </div>
 
       {/* Daily income vs expenses bar + Expense category pie */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         <ChartCard
           title="درآمد در برابر هزینه"
           description="روند روزانه در ۳۰ روز گذشته"
@@ -2025,6 +2051,7 @@ function FinancialTab({
           {daily.every((d) => d.revenue === 0 && d.expenses === 0) ? (
             <EmptyChart message="داده‌ای در این بازه موجود نیست" />
           ) : (
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart
                 data={dailyChart}
@@ -2072,6 +2099,7 @@ function FinancialTab({
                 />
               </BarChart>
             </ResponsiveContainer>
+            </div>
           )}
         </ChartCard>
 
@@ -2083,6 +2111,7 @@ function FinancialTab({
           {expenseChart.length === 0 ? (
             <EmptyChart message="هزینه‌ای ثبت نشده است" />
           ) : (
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -2112,6 +2141,7 @@ function FinancialTab({
                 />
               </PieChart>
             </ResponsiveContainer>
+            </div>
           )}
         </ChartCard>
       </div>
@@ -2125,6 +2155,7 @@ function FinancialTab({
         {daily.every((d) => d.profit === 0) ? (
           <EmptyChart message="داده‌ای موجود نیست" />
         ) : (
+          <div className="chart-container min-h-[220px] sm:min-h-[300px]">
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart
               data={dailyChart}
@@ -2165,11 +2196,12 @@ function FinancialTab({
               />
             </AreaChart>
           </ResponsiveContainer>
+          </div>
         )}
       </ChartCard>
 
       {/* Summary detail card */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         <ChartCard
           title="خلاصه صورت سود و زیان"
           description="۳۰ روز گذشته"
@@ -2323,10 +2355,10 @@ function PnLRow({
 function SkeletonGrid({ count = 4 }: { count?: number }) {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {Array.from({ length: count }).map((_, i) => (
           <Card key={i}>
-            <CardContent className="p-5 h-32">
+            <CardContent className="p-4 sm:p-5 h-28 sm:h-32">
               <Skeleton className="h-4 w-1/2 mb-3" />
               <Skeleton className="h-6 w-3/4" />
               <Skeleton className="h-3 w-2/3 mt-2" />
@@ -2334,12 +2366,12 @@ function SkeletonGrid({ count = 4 }: { count?: number }) {
           </Card>
         ))}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         {Array.from({ length: 2 }).map((_, i) => (
           <Card key={i}>
-            <CardContent className="p-5">
+            <CardContent className="p-4 sm:p-5">
               <Skeleton className="h-4 w-1/3 mb-4" />
-              <Skeleton className="h-[260px] w-full" />
+              <Skeleton className="h-[220px] sm:h-[260px] w-full" />
             </CardContent>
           </Card>
         ))}

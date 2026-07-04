@@ -215,28 +215,31 @@ export function AccountingModule() {
   return (
     <div className="space-y-6">
       <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Wallet className="w-6 h-6 text-amber-500" />
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500" />
               حسابداری و مالی
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">
+            <p className="text-muted-foreground text-xs sm:text-sm mt-1">
               خلاصه مالی، مدیریت صندوق فروش و هزینه‌ها
             </p>
           </div>
-          <TabsList className="h-auto">
-            <TabsTrigger value="summary" className="gap-1.5">
-              <TrendingUp className="w-4 h-4" />
-              خلاصه مالی
+          <TabsList className="h-auto w-full sm:w-auto overflow-x-auto scrollbar-hide">
+            <TabsTrigger value="summary" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+              <TrendingUp className="w-4 h-4 shrink-0" />
+              <span className="hidden xs:inline">خلاصه مالی</span>
+              <span className="xs:hidden">خلاصه</span>
             </TabsTrigger>
-            <TabsTrigger value="cashbox" className="gap-1.5">
-              <Coins className="w-4 h-4" />
-              صندوق فروش
+            <TabsTrigger value="cashbox" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+              <Coins className="w-4 h-4 shrink-0" />
+              <span className="hidden xs:inline">صندوق فروش</span>
+              <span className="xs:hidden">صندوق</span>
             </TabsTrigger>
-            <TabsTrigger value="expenses" className="gap-1.5">
-              <Receipt className="w-4 h-4" />
-              هزینه‌ها
+            <TabsTrigger value="expenses" className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs sm:text-sm">
+              <Receipt className="w-4 h-4 shrink-0" />
+              <span className="hidden xs:inline">هزینه‌ها</span>
+              <span className="xs:hidden">هزینه‌ها</span>
             </TabsTrigger>
           </TabsList>
         </div>
@@ -282,10 +285,10 @@ function SummaryTab() {
   if (loading || !data) {
     return (
       <div className="space-y-4">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
-              <CardContent className="p-5 h-32">
+              <CardContent className="p-4 sm:p-5 h-28 sm:h-32">
                 <Skeleton className="h-full w-full" />
               </CardContent>
             </Card>
@@ -293,12 +296,12 @@ function SummaryTab() {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <Card className="lg:col-span-2">
-            <CardContent className="p-5 h-80">
+            <CardContent className="p-4 sm:p-5 h-64 sm:h-80">
               <Skeleton className="h-full w-full" />
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-5 h-80">
+            <CardContent className="p-4 sm:p-5 h-64 sm:h-80">
               <Skeleton className="h-full w-full" />
             </CardContent>
           </Card>
@@ -326,18 +329,18 @@ function SummaryTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           خلاصه عملکرد مالی در ۳۰ روز گذشته
         </p>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+        <Button variant="outline" size="sm" onClick={load} disabled={loading} className="shrink-0 self-start sm:self-auto">
           <RefreshCw className={`w-4 h-4 ml-1 ${loading ? "animate-spin" : ""}`} />
           به‌روزرسانی
         </Button>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
           title="درآمد ۳۰ روز"
           value={formatToman(kpis.totalIncome30)}
@@ -369,78 +372,83 @@ function SummaryTab() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg">درآمد در برابر هزینه</CardTitle>
+            <CardTitle className="text-base sm:text-lg">درآمد در برابر هزینه</CardTitle>
             <CardDescription>روند روزانه در ۱۴ روز اخیر</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={dailyChartData} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11 }}
-                  className="text-xs"
-                />
-                <YAxis
-                  tickFormatter={(v) => `${toPersianDigits(Math.round(v / 1000000))}م`}
-                  tick={{ fontSize: 11 }}
-                  width={50}
-                  className="text-xs"
-                />
-                <Tooltip
-                  formatter={(value: number) => formatToman(value)}
-                  contentStyle={{ direction: "rtl", borderRadius: "8px" }}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: "12px", direction: "rtl" }}
-                  iconType="circle"
-                />
-                <Bar dataKey="درآمد" fill="#D4A017" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="هزینه" fill="#F43F5E" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="chart-container min-h-[220px] sm:min-h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dailyChartData} barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10 }}
+                    className="text-xs"
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    tickFormatter={(v) => `${toPersianDigits(Math.round(v / 1000000))}م`}
+                    tick={{ fontSize: 10 }}
+                    width={48}
+                    className="text-xs"
+                  />
+                  <Tooltip
+                    formatter={(value: number) => formatToman(value)}
+                    contentStyle={{ direction: "rtl", borderRadius: "8px", fontSize: "12px" }}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: "11px", direction: "rtl" }}
+                    iconType="circle"
+                  />
+                  <Bar dataKey="درآمد" fill="#D4A017" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="هزینه" fill="#F43F5E" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">تفکیک هزینه‌ها</CardTitle>
+            <CardTitle className="text-base sm:text-lg">تفکیک هزینه‌ها</CardTitle>
             <CardDescription>بر اساس دسته‌بندی</CardDescription>
           </CardHeader>
           <CardContent>
             {pieData.length === 0 ? (
-              <div className="h-[300px] flex items-center justify-center text-sm text-muted-foreground">
+              <div className="h-[220px] sm:h-[300px] flex items-center justify-center text-sm text-muted-foreground">
                 هزینه‌ای ثبت نشده است
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={90}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {pieData.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: number) => formatToman(value)}
-                    contentStyle={{ direction: "rtl", borderRadius: "8px" }}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: "12px", direction: "rtl" }}
-                    iconType="circle"
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="chart-container min-h-[220px] sm:min-h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {pieData.map((_, i) => (
+                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number) => formatToman(value)}
+                      contentStyle={{ direction: "rtl", borderRadius: "8px", fontSize: "12px" }}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: "11px", direction: "rtl" }}
+                      iconType="circle"
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -449,13 +457,13 @@ function SummaryTab() {
       {/* Cashbox quick overview */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
             <Coins className="w-5 h-5 text-amber-500" />
             وضعیت صندوق‌ها
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {data.cashboxes.map((c) => (
               <div
                 key={c.id}
@@ -515,15 +523,15 @@ function KpiCard({
   };
   return (
     <Card>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${accentColors[accent]}`}>
-            <Icon className="w-5 h-5" />
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-start justify-between mb-2 sm:mb-3">
+          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center ${accentColors[accent]}`}>
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
-        <p className="text-sm text-muted-foreground mb-1">{title}</p>
-        <p className="text-xl font-bold truncate">{value}</p>
-        {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+        <p className="text-xs sm:text-sm text-muted-foreground mb-1">{title}</p>
+        <p className="text-base sm:text-xl font-bold truncate">{value}</p>
+        {subtitle && <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">{subtitle}</p>}
       </CardContent>
     </Card>
   );
@@ -631,10 +639,10 @@ function CashboxTab() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i}>
-            <CardContent className="p-5 h-44">
+            <CardContent className="p-4 sm:p-5 h-40 sm:h-44">
               <Skeleton className="h-full w-full" />
             </CardContent>
           </Card>
@@ -645,7 +653,7 @@ function CashboxTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Coins className="w-4 h-4" />
           مجموع موجودی صندوق‌ها:
@@ -679,7 +687,7 @@ function CashboxTab() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {cashboxes.map((cb) => {
             const isOpen = cb.status === "open";
             return (
@@ -691,7 +699,7 @@ function CashboxTab() {
                     : ""
                 }
               >
-                <CardContent className="p-5 space-y-3">
+                <CardContent className="p-4 sm:p-5 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3 min-w-0">
                       <div
@@ -701,7 +709,7 @@ function CashboxTab() {
                             : "bg-stone-100 text-stone-500 dark:bg-stone-900/40"
                         }`}
                       >
-                        <Coins className="w-5 h-5" />
+                        <Coins className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
                       <div className="min-w-0">
                         <h3 className="font-bold text-sm truncate">{cb.name}</h3>
@@ -844,7 +852,7 @@ function CashboxTab() {
                 تراکنشی ثبت نشده است
               </div>
             ) : (
-              <div className="overflow-x-auto max-h-96 overflow-y-auto custom-scrollbar">
+              <div className="overflow-x-auto max-h-96 overflow-y-auto scrollbar-thin">
                 <Table>
                   <TableHeader className="sticky top-0 bg-background">
                     <TableRow>
@@ -997,7 +1005,7 @@ function AddTransactionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-[95vw] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="w-5 h-5 text-amber-500" />
@@ -1140,7 +1148,7 @@ function AddCashboxDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-[95vw] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Coins className="w-5 h-5 text-amber-500" />
@@ -1255,7 +1263,7 @@ function DailyClosingDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleCloseDialog}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-w-[95vw] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Lock className="w-5 h-5 text-amber-500" />
@@ -1280,7 +1288,7 @@ function DailyClosingDialog({
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
               <SummaryItem
                 label="موجودی اول دوره"
                 value={formatToman(result.summary.salesTotal !== undefined ? result.cashbox.openingBalance : 0)}
@@ -1472,10 +1480,10 @@ function ExpensesTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 flex-wrap">
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-full sm:w-44">
               <SelectValue placeholder="همه دسته‌ها" />
             </SelectTrigger>
             <SelectContent>
@@ -1516,7 +1524,7 @@ function ExpensesTab() {
               هزینه‌ای ثبت نشده است
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto scrollbar-thin">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -1676,7 +1684,7 @@ function AddExpenseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-[95vw] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Receipt className="w-5 h-5 text-amber-500" />
@@ -1711,7 +1719,7 @@ function AddExpenseDialog({
               rows={2}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>مبلغ (تومان) *</Label>
               <Input
