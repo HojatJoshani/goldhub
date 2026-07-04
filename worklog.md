@@ -1046,3 +1046,45 @@ Stage Summary:
 - فونت فارسی Vazirmatn با وزن‌های کامل (300-800)
 - RTL بهینه شده
 - آماده commit و push
+
+---
+Task ID: LIVE-GOLD
+Agent: Main (Z.ai Code)
+Task: اضافه کردن قیمت زنده طلا ایران با به‌روزرسانی خودکار
+
+Work Log:
+- ساخت lib/gold-price.ts: دریافت قیمت زنده از web-search (tgju, iranjib, taline)
+  - پارس قیمت‌های ۱۸، ۲۴، ۲۲، ۱۴ عیار
+  - پارس دلار، اونس، سکه
+  - fallback برای زمان خطا
+  - cache 5 دقیقه‌ای
+- ساخت API routes:
+  • /api/gold-prices/live - دریافت قیمت لحظه‌ای
+  • /api/gold-prices/history - تاریخچه قیمت‌ها با stats
+  • /api/gold-prices/refresh - به‌روزرسانی دستی
+  • /api/gold-prices/auto-update - endpoint داخلی برای mini-service
+- ساخت mini-services/gold-price-updater:
+  • سرویس پس‌زمینه روی پورت 3004
+  • به‌روزرسانی خودکار هر ۳۰ دقیقه
+  • ذخیره در دیتابیس برای همه tenant‌ها
+  • endpoint /health برای مانیتورینگ
+  • endpoint /trigger برای به‌روزرسانی دستی
+- ساخت کامپوننت‌ها:
+  • LiveGoldTicker: تیکر قیمت زنده در بالای داشبورد (auto-refresh هر ۵ دقیقه)
+  • GoldPricePanel: پنل کامل با ۳ تب:
+    - قیمت لحظه‌ای: کارت قیمت‌ها + دلار/اونس/سکه
+    - نمودار تاریخچه: Area chart با stats (فعلی/میانگین/بالاترین/پایین‌ترین/تغییر)
+    - جزئیات: آمار دیتابیس + اطلاعات منبع
+- به‌روزرسانی dashboard.tsx: اضافه کردن LiveGoldTicker و GoldPricePanel
+- تست واقعی: قیمت‌های واقعی دریافت شد:
+  • طلای ۱۸ عیار: ۱۷٬۶۱۱٬۰۰۰ تومان
+  • طلای ۲۴ عیار: ۲۳٬۴۷۵٬۰۰۰ تومان
+- تست Agent Browser: تیکر و پنل در موبایل و دسکتاپ کار می‌کنند
+
+Stage Summary:
+- قیمت زنده طلا از منابع ایرانی با web-search
+- به‌روزرسانی خودکار هر ۳۰ دقیقه (mini-service)
+- auto-refresh در frontend هر ۵ دقیقه
+- نمودار تاریخچه با stats کامل
+- ذخیره در دیتابیس برای همه tenant‌ها
+- آماده commit و push

@@ -42,6 +42,8 @@ import {
   formatRelativeTime,
   karatLabel,
 } from "@/lib/persian";
+import { LiveGoldTicker } from "@/components/live-gold-ticker";
+import { GoldPricePanel } from "@/components/gold-price-panel";
 
 interface DashboardData {
   kpis: {
@@ -158,34 +160,7 @@ export function DashboardModule() {
       </div>
 
       {/* Live Gold Prices Ticker */}
-      <Card className="overflow-hidden border-amber-200 dark:border-amber-900">
-        <CardContent className="p-0">
-          <div className="flex items-center bg-gradient-to-l from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30">
-            <div className="bg-amber-500 text-white px-3 sm:px-4 py-2 font-bold text-xs sm:text-sm flex items-center gap-2 shrink-0">
-              <Crown className="w-4 h-4" />
-              <span className="hidden xs:inline">قیمت زنده طلا</span>
-              <span className="xs:hidden">طلا</span>
-            </div>
-            <ScrollArea className="flex-1 overflow-hidden">
-              <div className="flex items-center gap-4 sm:gap-6 px-3 sm:px-4 py-2 whitespace-nowrap">
-                {goldPrices.map((g) => (
-                  <div key={g.karat} className="flex items-center gap-2 text-xs sm:text-sm shrink-0">
-                    <Badge variant="outline" className="border-amber-400 text-amber-700 dark:text-amber-300">
-                      {karatLabel(g.karat)}
-                    </Badge>
-                    <span className="font-semibold tabular-nums ltr-num">{formatNumber(g.price)}</span>
-                    <span className="text-muted-foreground text-[10px] sm:text-xs">ت/گرم</span>
-                  </div>
-                ))}
-                <div className="flex items-center gap-1 text-[10px] sm:text-xs text-green-600 shrink-0">
-                  <TrendingUp className="w-3 h-3" />
-                  {formatRelativeTime(goldPrices[0]?.updatedAt)}
-                </div>
-              </div>
-            </ScrollArea>
-          </div>
-        </CardContent>
-      </Card>
+      <LiveGoldTicker autoRefresh refreshInterval={300} />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -481,6 +456,9 @@ export function DashboardModule() {
           </CardContent>
         </Card>
       )}
+
+      {/* Live Gold Price Panel */}
+      <GoldPricePanel />
     </div>
   );
 }
