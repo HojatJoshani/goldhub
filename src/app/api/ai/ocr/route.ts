@@ -104,7 +104,13 @@ export async function POST(req: NextRequest) {
 
     try {
       const zai = await ZAI.create();
-      const completion = await zai.chat.completions.create({
+      // SDK exposes createVision at runtime (multimodal / image_url endpoint)
+      const createVision = (zai.chat.completions as unknown as {
+        createVision: (body: Record<string, unknown>) => Promise<{
+          choices?: { message?: { content?: string } }[];
+        }>;
+      }).createVision;
+      const completion = await createVision({
         messages: [
           {
             role: "user",

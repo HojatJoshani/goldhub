@@ -14,6 +14,7 @@ import { AccountingModule } from "@/components/modules/accounting";
 import { ReportsModule } from "@/components/modules/reports";
 import { AiModule } from "@/components/modules/ai";
 import { MarketplaceModule } from "@/components/modules/marketplace";
+import { ToolsModule } from "@/components/modules/tools";
 import { AdminModule } from "@/components/modules/admin";
 import { Loader2 } from "lucide-react";
 import type { ModuleKey } from "@/lib/navigation";
@@ -48,6 +49,7 @@ function AppContent() {
     reports: <ReportsModule />,
     ai: <AiModule />,
     marketplace: <MarketplaceModule />,
+    tools: <ToolsModule />,
     admin: <AdminModule />,
   };
 

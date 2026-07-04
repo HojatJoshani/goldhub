@@ -17,7 +17,15 @@ export async function POST(req: NextRequest) {
     const data = await fetchLiveGoldPrices();
 
     // Save to database for this tenant
-    const saved = [];
+    const saved: {
+      id: string;
+      karat: string;
+      pricePerGram: number;
+      currency: string;
+      source: string;
+      tenantId: string;
+      createdAt: Date;
+    }[] = [];
     for (const price of data.prices) {
       const record = await db.goldPrice.create({
         data: {
