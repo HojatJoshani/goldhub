@@ -102,7 +102,7 @@ async function main() {
     data: {
       email: "admin@goldhub.ir",
       passwordHash: adminPass,
-      name: "حجت جوشانی",
+      name: "حجت جوشنی",
       role: "super_admin",
       status: "active",
       tenantId: tenant.id,

@@ -28,7 +28,7 @@ async function getDemoUsers() {
     DEMO_USERS["admin@goldhub.ir"] = {
       id: "demo-admin",
       email: "admin@goldhub.ir",
-      name: "حجت جوشانی",
+      name: "حجت جوشنی",
       role: "super_admin",
       tenantId: "demo-tenant",
       branchId: "demo-branch",
