@@ -4,6 +4,8 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ServiceWorkerRegister } from "@/components/sw-register";
+import { PwaInstaller } from "@/components/pwa-installer";
 
 const vazirmatn = Vazirmatn({
   subsets: ["arabic", "latin"],
@@ -14,9 +16,21 @@ const vazirmatn = Vazirmatn({
 
 export const metadata: Metadata = {
   title: "گلد هاب | پلتفرم مدیریت طلا و جواهر",
-  description: "پلتفرم جامع مدیریت فروشگاه طلا و جواهرات - انبار، فروش، مشتریان، حسابداری و هوش مصنوعی",
-  keywords: ["طلا", "جواهر", "مدیریت فروشگاه", "گلد هاب", "GoldHub", "POS", "صندوق فروش", "انبار طلا"],
+  description:
+    "پلتفرم جامع مدیریت فروشگاه طلا و جواهرات - انبار، فروش، مشتریان، حسابداری و هوش مصنوعی",
+  keywords: [
+    "طلا",
+    "جواهر",
+    "مدیریت فروشگاه",
+    "گلد هاب",
+    "GoldHub",
+    "POS",
+    "صندوق فروش",
+    "انبار طلا",
+  ],
   authors: [{ name: "گروه توسعه آریا" }],
+  creator: "گروه توسعه آریا",
+  publisher: "گروه توسعه آریا",
   applicationName: "گلد هاب",
   formatDetection: {
     telephone: false,
@@ -25,15 +39,29 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "گلد هاب",
   },
   icons: {
-    icon: "/icon.svg",
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.svg", sizes: "192x192", type: "image/svg+xml" },
+      { url: "/icon-512.svg", sizes: "512x512", type: "image/svg+xml" },
+    ],
     shortcut: "/icon.svg",
-    apple: "/apple-icon.svg",
+    apple: [
+      { url: "/apple-icon.svg", sizes: "180x180", type: "image/svg+xml" },
+      { url: "/icon-192.svg", sizes: "192x192", type: "image/svg+xml" },
+    ],
   },
   manifest: "/manifest.webmanifest",
+  appLinks: {
+    web: {
+      url: "https://goldhub.app",
+      name: "گلد هاب",
+      images: ["/icon-512.svg"],
+    },
+  },
 };
 
 export const viewport: Viewport = {
@@ -55,6 +83,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa" dir="rtl" suppressHydrationWarning>
+      <head>
+        {/* PWA Meta Tags */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="گلد هاب" />
+        <meta name="application-name" content="گلد هاب" />
+        <meta name="msapplication-TileColor" content="#D4A017" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        <meta name="theme-color" content="#D4A017" />
+        {/* Splash screen background */}
+        <meta name="color-scheme" content="light dark" />
+      </head>
       <body
         className={`${vazirmatn.variable} font-sans antialiased bg-background text-foreground`}
       >
@@ -65,6 +109,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <PwaInstaller />
+          <ServiceWorkerRegister />
           <Toaster />
           <SonnerToaster position="top-center" />
         </ThemeProvider>
