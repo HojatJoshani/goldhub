@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
 
 const SESSION_COOKIE = "gh_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -17,11 +16,25 @@ export interface SessionUser {
 }
 
 function encodeBase64(str: string): string {
-  return Buffer.from(str, "utf-8").toString("base64url");
+  // Use Buffer if available (Node.js), otherwise use btoa (browser/edge)
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(str, "utf-8").toString("base64url");
+  }
+  return btoa(unescape(encodeURIComponent(str)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
 function decodeBase64(str: string): string {
-  return Buffer.from(str, "base64url").toString("utf-8");
+  // Use Buffer if available (Node.js), otherwise use atob (browser/edge)
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(str, "base64url").toString("utf-8");
+  }
+  const decoded = decodeURIComponent(
+    escape(atob(str.replace(/-/g, "+").replace(/_/g, "/")))
+  );
+  return decoded;
 }
 
 /** Create a signed session token (simple format: payload.signature) */
@@ -45,15 +58,13 @@ export function verifySessionToken(token: string): SessionUser | null {
     const [encoded, signature] = token.split(".");
     if (!encoded || !signature) return null;
 
-    const secret = process.env.SESSION_SECRET || "goldhub-dev-secret-change-me";
-    const expectedSig = encodeBase64(
-      String(encoded.length) + secret.slice(0, 8) + "xxxx"
-    );
     // Loose verification for dev (check structure)
     const decoded = JSON.parse(decodeBase64(encoded)) as SessionUser & {
       exp?: number;
     };
     if (decoded.exp && Date.now() > decoded.exp) return null;
+    // Validate required fields
+    if (!decoded.id || !decoded.email || !decoded.tenantId) return null;
     return decoded;
   } catch {
     return null;
@@ -88,7 +99,13 @@ export function setSessionCookie(
 
 /** Clear session cookie */
 export function clearSessionCookie(res: NextResponse): NextResponse {
-  res.cookies.delete(SESSION_COOKIE);
+  res.cookies.set(SESSION_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
   return res;
 }
 

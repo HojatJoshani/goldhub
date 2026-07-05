@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "گلد هاب | پلتفرم مدیریت طلا و جواهر",
   description: "پلتفرم جامع مدیریت فروشگاه طلا و جواهرات - انبار، فروش، مشتریان، حسابداری و هوش مصنوعی",
   keywords: ["طلا", "جواهر", "مدیریت فروشگاه", "گلد هاب", "GoldHub", "POS", "صندوق فروش", "انبار طلا"],
-  authors: [{ name: "GoldHub" }],
+  authors: [{ name: "گروه توسعه آریا" }],
   applicationName: "گلد هاب",
   formatDetection: {
     telephone: false,
@@ -28,6 +28,12 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "گلد هاب",
   },
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/apple-icon.svg",
+  },
+  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {
