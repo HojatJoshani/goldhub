@@ -74,7 +74,7 @@ export function LoginPage() {
         </div>
 
         <div className="relative z-10 text-amber-200 text-xs sm:text-sm">
-          © {toPersianDigits(1404)} گلد هاب - تمامی حقوق محفوظ است
+          © {toPersianDigits(1405)} گلد هاب - تمامی حقوق محفوظ است
         </div>
       </div>
 

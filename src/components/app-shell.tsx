@@ -188,9 +188,9 @@ export function AppShell({ current, onNavigate, children }: AppShellProps) {
             <ChevronLeft className="hidden md:inline w-4 h-4 shrink-0" />
             <span className="font-medium text-foreground truncate">{currentItem?.label}</span>
           </div>
-          {/* Mobile title */}
-          <div className="flex sm:hidden items-center min-w-0 flex-1">
-            <span className="font-medium text-sm truncate">{currentItem?.label}</span>
+          {/* Mobile title - "گلد هاب" centered */}
+          <div className="flex sm:hidden items-center justify-center min-w-0 flex-1">
+            <span className="font-bold text-sm gold-text truncate">گلد هاب</span>
           </div>
 
           <div className="flex-1 hidden sm:block" />
@@ -303,7 +303,7 @@ export function AppShell({ current, onNavigate, children }: AppShellProps) {
 
         {/* Footer */}
         <footer className="mt-auto border-t py-3 sm:py-4 px-4 sm:px-6 text-center text-[11px] sm:text-xs text-muted-foreground safe-bottom">
-          © {toPersianDigits(1404)} گلد هاب - پلتفرم مدیریت طلا و جواهر · نسخه ۱.۰.۰
+          © {toPersianDigits(1405)} گلد هاب - پلتفرم مدیریت طلا و جواهر · نسخه ۱.۰.۰
         </footer>
       </div>
     </div>
