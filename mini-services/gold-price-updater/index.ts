@@ -76,60 +76,88 @@ function parsePricesFromText(text: string): GoldPrice[] {
   const prices: GoldPrice[] = [];
   const now = new Date().toISOString();
 
+  // Normalize Persian/Arabic digits
   const normalized = text
     .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
     .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
-    .replace(/[،,]/g, ",");
+    .replace(/[،]/g, ",")
+    .replace(/\u00A0/g, " ")
+    .replace(/\u200C/g, "")
+    .replace(/\s+/g, " ");
+
+  const pricePattern = "(\\d{1,3}(?:,\\d{3}){2,4}|\\d{8,9})";
 
   const patterns: { karat: string; label: string; regexes: RegExp[] }[] = [
     {
       karat: "750",
       label: "طلای ۱۸ عیار (۷۵۰)",
       regexes: [
-        /18\s*عیار[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
-        /عیار\s*18[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
-        /گرم\s*طلای\s*18[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
+        new RegExp(`طلای?\\s*18\\s*عیار[^\\d]{0,80}?${pricePattern}`, "g"),
+        new RegExp(`گرم\\s*طلای?\\s*18[^\\d]{0,80}?${pricePattern}`, "g"),
+        new RegExp(`18\\s*عیار\\.?\\s*تومان?\\s*${pricePattern}`, "g"),
       ],
     },
     {
       karat: "999",
       label: "طلای ۲۴ عیار (۹۹۹)",
       regexes: [
-        /24\s*عیار[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
-        /عیار\s*24[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
-        /گرم\s*طلای\s*24[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
+        new RegExp(`طلای?\\s*24\\s*عیار[^\\d]{0,80}?${pricePattern}`, "g"),
+        new RegExp(`گرم\\s*طلای?\\s*24[^\\d]{0,80}?${pricePattern}`, "g"),
+        new RegExp(`24\\s*عیار\\.?\\s*تومان?\\s*${pricePattern}`, "g"),
       ],
     },
     {
       karat: "916",
       label: "طلای ۲۲ عیار (۹۱۶)",
       regexes: [
-        /22\s*عیار[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
-        /عیار\s*22[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
+        new RegExp(`طلای?\\s*22\\s*عیار[^\\d]{0,80}?${pricePattern}`, "g"),
+        new RegExp(`22\\s*عیار\\.?\\s*تومان?\\s*${pricePattern}`, "g"),
       ],
     },
     {
       karat: "585",
       label: "طلای ۱۴ عیار (۵۸۵)",
       regexes: [
-        /14\s*عیار[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
-        /عیار\s*14[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
+        new RegExp(`طلای?\\s*14\\s*عیار[^\\d]{0,80}?${pricePattern}`, "g"),
+        new RegExp(`14\\s*عیار\\.?\\s*تومان?\\s*${pricePattern}`, "g"),
       ],
     },
   ];
+
+  function parsePriceToToman(priceStr: string, karat: string): number | null {
+    const cleanStr = priceStr.replace(/[,٬\s]/g, "");
+    const price = parseInt(cleanStr);
+    if (isNaN(price)) return null;
+
+    const ranges: Record<string, { min: number; max: number }> = {
+      "999": { min: 18000000, max: 35000000 },
+      "916": { min: 16000000, max: 32000000 },
+      "750": { min: 13000000, max: 26000000 },
+      "585": { min: 10000000, max: 20000000 },
+    };
+    const range = ranges[karat];
+    if (!range) return null;
+
+    if (price >= range.min && price <= range.max) return price;
+    const tomanFromRial = Math.round(price / 10);
+    if (tomanFromRial >= range.min && tomanFromRial <= range.max) return tomanFromRial;
+    return null;
+  }
 
   for (const p of patterns) {
     let foundPrice: number | null = null;
     for (const regex of p.regexes) {
       const matches = [...normalized.matchAll(regex)];
       if (matches.length > 0) {
-        const priceStr = matches[0][1].replace(/,/g, "");
-        const price = parseInt(priceStr);
-        if (price > 1000000 && price < 100000000) {
-          foundPrice = price;
-          break;
+        for (const match of matches) {
+          const parsed = parsePriceToToman(match[1], p.karat);
+          if (parsed) {
+            foundPrice = parsed;
+            break;
+          }
         }
       }
+      if (foundPrice) break;
     }
 
     if (foundPrice) {
@@ -143,9 +171,31 @@ function parsePricesFromText(text: string): GoldPrice[] {
     }
   }
 
+  // Calculate missing karats from 18k
+  const price18 = prices.find((p) => p.karat === "750");
+  if (price18) {
+    const base18 = price18.pricePerGram;
+    const karatsToAdd = [
+      { karat: "999", label: "طلای ۲۴ عیار (۹۹۹)", ratio: 24 / 18 },
+      { karat: "916", label: "طلای ۲۲ عیار (۹۱۶)", ratio: 22 / 18 },
+      { karat: "585", label: "طلای ۱۴ عیار (۵۸۵)", ratio: 14 / 18 },
+    ];
+    for (const k of karatsToAdd) {
+      if (!prices.find((p) => p.karat === k.karat)) {
+        prices.push({
+          karat: k.karat,
+          label: k.label,
+          pricePerGram: Math.round(base18 * k.ratio),
+          updatedAt: now,
+          source: "calculated",
+        });
+      }
+    }
+  }
+
   // Fallback if no prices found
   if (prices.length === 0) {
-    const base18 = 17500000;
+    const base18 = 17700000;
     prices.push(
       { karat: "999", label: "طلای ۲۴ عیار (۹۹۹)", pricePerGram: Math.round((base18 * 24) / 18), updatedAt: now, source: "fallback" },
       { karat: "916", label: "طلای ۲۲ عیار (۹۱۶)", pricePerGram: Math.round((base18 * 22) / 18), updatedAt: now, source: "fallback" },

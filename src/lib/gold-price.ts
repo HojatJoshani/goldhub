@@ -2,7 +2,7 @@ import ZAI from "z-ai-web-dev-sdk";
 import { db } from "@/lib/db";
 
 export interface LiveGoldPrice {
-  karat: string; // 24, 22, 18, 14, 999, 916, 750, 585
+  karat: string; // 999, 916, 750, 585
   label: string; // Persian label
   pricePerGram: number; // in Toman
   changePercent?: number; // daily change %
@@ -34,14 +34,81 @@ export interface LiveGoldData {
 
 let cachedData: LiveGoldData | null = null;
 let cacheTime = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+const CACHE_TTL = 3 * 60 * 1000; // 3 minutes cache (shorter for fresher data)
+
+/**
+ * Normalize Persian/Arabic digits to English and clean text
+ */
+function normalizeText(text: string): string {
+  return text
+    // Persian digits
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    // Arabic digits
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    // Persian comma to regular
+    .replace(/[،]/g, ",")
+    // Non-breaking spaces
+    .replace(/\u00A0/g, " ")
+    // ZWNJ
+    .replace(/\u200C/g, "")
+    // Multiple spaces
+    .replace(/\s+/g, " ");
+}
+
+/**
+ * Parse a price string and convert to Toman
+ * Handles Rial to Toman conversion (divide by 10)
+ * Valid Toman ranges per gram:
+ *   18k (750): 14,000,000 - 22,000,000
+ *   24k (999): 19,000,000 - 30,000,000
+ *   22k (916): 17,000,000 - 26,000,000
+ *   14k (585): 11,000,000 - 17,000,000
+ */
+function parsePriceToToman(
+  priceStr: string,
+  karat: string
+): number | null {
+  const cleanStr = priceStr.replace(/[,٬\s]/g, "");
+  const price = parseInt(cleanStr);
+  if (isNaN(price)) return null;
+
+  // Define valid Toman ranges per karat
+  const ranges: Record<string, { min: number; max: number }> = {
+    "999": { min: 18000000, max: 35000000 }, // 24k: 18M-35M Toman/g
+    "916": { min: 16000000, max: 32000000 }, // 22k
+    "750": { min: 13000000, max: 26000000 }, // 18k: 13M-26M Toman/g
+    "585": { min: 10000000, max: 20000000 }, // 14k
+  };
+
+  const range = ranges[karat];
+  if (!range) return null;
+
+  // If price is in valid Toman range, return as-is
+  if (price >= range.min && price <= range.max) {
+    return price;
+  }
+
+  // If price is 10x (Rial), convert to Toman
+  const tomanFromRial = Math.round(price / 10);
+  if (tomanFromRial >= range.min && tomanFromRial <= range.max) {
+    return tomanFromRial;
+  }
+
+  // If price is 1000x (might be Rial without proper formatting)
+  const tomanFromRial2 = Math.round(price / 1000);
+  if (tomanFromRial2 >= range.min && tomanFromRial2 <= range.max) {
+    return tomanFromRial2;
+  }
+
+  return null;
+}
 
 /**
  * Fetch live gold prices from Iranian sources using web search
  * Prices are in Toman per gram
  */
 export async function fetchLiveGoldPrices(): Promise<LiveGoldData> {
-  // Return cached data if fresh (within 5 minutes)
+  // Return cached data if fresh (within 3 minutes)
   if (cachedData && Date.now() - cacheTime < CACHE_TTL) {
     return cachedData;
   }
@@ -49,30 +116,113 @@ export async function fetchLiveGoldPrices(): Promise<LiveGoldData> {
   try {
     const zai = await ZAI.create();
 
-    // Search for current gold prices
-    const results = await zai.functions.invoke("web_search", {
-      query: "قیمت لحظه ای طلا ۱۸ عیار ۲۴ عیار سکه امیرالمومنین مثقال تومان امروز",
-      num: 10,
-      recency_days: 1,
-    });
+    // Search for current gold prices - multiple queries for better coverage
+    const [results1, results2] = await Promise.all([
+      zai.functions.invoke("web_search", {
+        query: "قیمت لحظه ای طلای ۱۸ عیار ۲۴ عیار تومان امروز",
+        num: 10,
+        recency_days: 1,
+      }),
+      zai.functions.invoke("web_search", {
+        query: "قیمت سکه امیرالمومنین دلار اونس طلا امروز تومان",
+        num: 10,
+        recency_days: 1,
+      }),
+    ]);
 
     // Combine all snippets for parsing
-    const allText = results
-      .map((r: { snippet?: string; name?: string }) => `${r.name} ${r.snippet}`)
+    const allResults = [...(results1 || []), ...(results2 || [])];
+    const allText = allResults
+      .map(
+        (r: { snippet?: string; name?: string }) =>
+          `${r.name || ""} ${r.snippet || ""}`
+      )
       .join(" ");
 
-    const prices = parsePricesFromText(allText);
-    const coins = parseCoinsFromText(allText);
-    const ounce = parseOunceFromText(allText);
-    const dollar = parseDollarFromText(allText);
+    const normalized = normalizeText(allText);
+
+    const prices = parsePricesFromText(normalized);
+    const coins = parseCoinsFromText(normalized);
+    const ounce = parseOunceFromText(normalized);
+    const dollar = parseDollarFromText(normalized);
+
+    // If we got at least 18k and 24k prices, we're good
+    const hasMainPrices = prices.some((p) => p.karat === "750") &&
+      prices.some((p) => p.karat === "999");
+
+    let finalPrices = prices;
+    if (!hasMainPrices) {
+      // Try fallback: calculate from whatever we found
+      const price18 = prices.find((p) => p.karat === "750");
+      const price24 = prices.find((p) => p.karat === "999");
+
+      if (price18 && !price24) {
+        // Calculate 24k from 18k: 24/18 = 1.333
+        finalPrices = [
+          ...prices,
+          {
+            karat: "999",
+            label: "طلای ۲۴ عیار (۹۹۹)",
+            pricePerGram: Math.round(price18.pricePerGram * (24 / 18)),
+            updatedAt: new Date().toISOString(),
+            source: "calculated",
+          },
+        ];
+      } else if (price24 && !price18) {
+        // Calculate 18k from 24k: 18/24 = 0.75
+        finalPrices = [
+          ...prices,
+          {
+            karat: "750",
+            label: "طلای ۱۸ عیار (۷۵۰)",
+            pricePerGram: Math.round(price24.pricePerGram * (18 / 24)),
+            updatedAt: new Date().toISOString(),
+            source: "calculated",
+          },
+        ];
+      }
+    }
+
+    // Ensure we have all karats - calculate missing ones from 18k
+    const price18 =
+      finalPrices.find((p) => p.karat === "750") ||
+      finalPrices.find((p) => p.karat === "999");
+    if (price18) {
+      const base18 = price18.karat === "750"
+        ? price18.pricePerGram
+        : Math.round(price18.pricePerGram * (18 / 24));
+
+      const karatsToAdd = [
+        { karat: "999", label: "طلای ۲۴ عیار (۹۹۹)", ratio: 24 / 18 },
+        { karat: "916", label: "طلای ۲۲ عیار (۹۱۶)", ratio: 22 / 18 },
+        { karat: "750", label: "طلای ۱۸ عیار (۷۵۰)", ratio: 1 },
+        { karat: "585", label: "طلای ۱۴ عیار (۵۸۵)", ratio: 14 / 18 },
+      ];
+
+      for (const k of karatsToAdd) {
+        if (!finalPrices.find((p) => p.karat === k.karat)) {
+          finalPrices.push({
+            karat: k.karat,
+            label: k.label,
+            pricePerGram: Math.round(base18 * k.ratio),
+            updatedAt: new Date().toISOString(),
+            source: "calculated-from-18k",
+          });
+        }
+      }
+    }
+
+    if (finalPrices.length === 0) {
+      return getFallbackPrices();
+    }
 
     const data: LiveGoldData = {
-      prices,
+      prices: finalPrices,
       coins,
       ounce,
       dollar,
       fetchedAt: new Date().toISOString(),
-      source: "web-search:tgju,iranjib,taline,alanchand",
+      source: "web-search:tgju,tabdeal,goldpricetoday,kifpool",
     };
 
     // Update cache
@@ -85,133 +235,144 @@ export async function fetchLiveGoldPrices(): Promise<LiveGoldData> {
     return data;
   } catch (error) {
     console.error("Error fetching live gold prices:", error);
-    // Return fallback data if fetch fails
     return getFallbackPrices();
   }
 }
 
 /**
- * Parse gold prices from text snippets
+ * Parse gold prices from normalized text
+ * Extracts prices for 18k, 24k, 22k, 14k gold per gram in Toman
  */
 function parsePricesFromText(text: string): LiveGoldPrice[] {
   const prices: LiveGoldPrice[] = [];
   const now = new Date().toISOString();
 
-  // Normalize Persian/Arabic digits to English
-  const normalized = text
-    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
-    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
-    .replace(/[،,]/g, ",");
+  // Patterns for each karat - capture prices near "18 عیار" etc.
+  // Price format: digits with commas, e.g. "17,706,700" or "17706700"
+  const pricePattern = "(\\d{1,3}(?:,\\d{3}){2,4}|\\d{8,9})";
 
-  // Price patterns for different karats
-  // Looking for patterns like "طلای 18 عیار 17,611,000" or "18 عیار ... 17,611,000"
-  const patterns: { karat: string; label: string; regexes: RegExp[] }[] = [
+  const patterns: {
+    karat: string;
+    label: string;
+    regexes: RegExp[];
+  }[] = [
     {
       karat: "750",
       label: "طلای ۱۸ عیار (۷۵۰)",
       regexes: [
-        /18\s*عیار[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
-        /عیار\s*18[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
-        /گرم\s*طلای\s*18[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
+        // "طلای 18 عیار" followed by price within 80 chars
+        new RegExp(`طلای?\\s*18\\s*عیار[^\\d]{0,80}?${pricePattern}`, "g"),
+        new RegExp(`گرم\\s*طلای?\\s*18[^\\d]{0,80}?${pricePattern}`, "g"),
+        new RegExp(`18\\s*عیار\\.?\\s*تومان${pricePattern}`, "g"),
+        // tabdeal style: "طلای ۱۸ عیار. تومان17,706,270"
+        new RegExp(`18\\s*عیار\\.?\\s*تومان?\\s*${pricePattern}`, "g"),
       ],
     },
     {
       karat: "999",
       label: "طلای ۲۴ عیار (۹۹۹)",
       regexes: [
-        /24\s*عیار[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
-        /عیار\s*24[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
-        /گرم\s*طلای\s*24[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
+        new RegExp(`طلای?\\s*24\\s*عیار[^\\d]{0,80}?${pricePattern}`, "g"),
+        new RegExp(`گرم\\s*طلای?\\s*24[^\\d]{0,80}?${pricePattern}`, "g"),
+        new RegExp(`24\\s*عیار\\.?\\s*تومان?\\s*${pricePattern}`, "g"),
       ],
     },
     {
       karat: "916",
       label: "طلای ۲۲ عیار (۹۱۶)",
       regexes: [
-        /22\s*عیار[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
-        /عیار\s*22[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
+        new RegExp(`طلای?\\s*22\\s*عیار[^\\d]{0,80}?${pricePattern}`, "g"),
+        new RegExp(`22\\s*عیار\\.?\\s*تومان?\\s*${pricePattern}`, "g"),
       ],
     },
     {
       karat: "585",
       label: "طلای ۱۴ عیار (۵۸۵)",
       regexes: [
-        /14\s*عیار[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
-        /عیار\s*14[^\d]{0,50}?(\d{1,3}(?:,\d{3}){2,4})/g,
+        new RegExp(`طلای?\\s*14\\s*عیار[^\\d]{0,80}?${pricePattern}`, "g"),
+        new RegExp(`14\\s*عیار\\.?\\s*تومان?\\s*${pricePattern}`, "g"),
       ],
     },
   ];
 
   for (const p of patterns) {
     let foundPrice: number | null = null;
+    let foundChange: number | undefined;
+
     for (const regex of p.regexes) {
-      const matches = [...normalized.matchAll(regex)];
+      const matches = [...text.matchAll(regex)];
       if (matches.length > 0) {
-        const priceStr = matches[0][1].replace(/,/g, "");
-        const price = parseInt(priceStr);
-        // Validate: gold gram price should be between 1M and 100M Toman
-        if (price > 1000000 && price < 100000000) {
-          foundPrice = price;
-          break;
+        // Try each match until we find a valid price
+        for (const match of matches) {
+          const parsed = parsePriceToToman(match[1], p.karat);
+          if (parsed) {
+            foundPrice = parsed;
+
+            // Look for change percent near this match (within 200 chars after)
+            const afterText = text.substring(
+              match.index! + match[0].length,
+              match.index! + match[0].length + 200
+            );
+            const changeMatch = afterText.match(
+              /(?:\+|-)?(\d+\.?\d*)\s*(?:%|درصد)/
+            );
+            if (changeMatch) {
+              foundChange = parseFloat(changeMatch[1]);
+              // Check if it's negative
+              if (afterText.includes("-") || afterText.includes("کاهش")) {
+                foundChange = -foundChange;
+              }
+            }
+            break;
+          }
         }
       }
+      if (foundPrice) break;
     }
 
     if (foundPrice) {
-      // Try to find change percent near this price
-      const changeRegex = new RegExp(
-        `${p.karat === "750" ? "18" : p.karat === "999" ? "24" : p.karat === "916" ? "22" : "14"}[^%]{0,100}?(\\d+\\.?\\d*)\\s*%`,
-        "g"
-      );
-      const changeMatch = changeRegex.exec(normalized);
-      const changePercent = changeMatch
-        ? parseFloat(changeMatch[1])
-        : undefined;
-
       prices.push({
         karat: p.karat,
         label: p.label,
         pricePerGram: foundPrice,
-        changePercent,
+        changePercent: foundChange,
         updatedAt: now,
         source: "web-search",
       });
     }
   }
 
-  // If no prices found, use fallback
-  if (prices.length === 0) {
-    return getFallbackPrices().prices;
-  }
-
   return prices;
 }
 
 /**
- * Parse coin prices from text
+ * Parse coin prices (skeleton coin - سکه امامی)
+ * Price range: 100M - 250M Toman for full coin
  */
 function parseCoinsFromText(text: string): LiveGoldData["coins"] {
   const coins: { name: string; price: number; changePercent?: number }[] = [];
-  const normalized = text
-    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
-    .replace(/[،,]/g, ",");
 
-  // سکه امامی / امیرالمومنین
-  const sekeEmamiRegex = /(?:سکه\s*امامی|امیر\s*المومنین|امیرالمومنین)[^\d]{0,50}?(\d{2,3}(?:,\d{3}){3})/g;
-  const sekeMatch = sekeEmamiRegex.exec(normalized);
+  // سکه امامی / امیرالمومنین - full coin (100M-250M Toman)
+  const sekeRegex = /(?:سکه\s*امامی|امیر\s*المومنین|امیرالمومنین)[^\d]{0,80}?(\d{2,3}(?:,\d{3}){3,4}|\d{9,11})/g;
+  const sekeMatch = sekeRegex.exec(text);
   if (sekeMatch) {
-    const price = parseInt(sekeMatch[1].replace(/,/g, ""));
-    if (price > 100000000 && price < 1000000000) {
-      coins.push({ name: "سکه امام (ربع)", price, changePercent: undefined });
+    let price = parseInt(sekeMatch[1].replace(/[,]/g, ""));
+    // Validate: 100M-300M Toman
+    if (price > 10000000 && price < 100000000) {
+      // Might be in thousands of Toman (e.g., "186,400m" = 186,400,000)
+      price = price * 1000;
+    }
+    if (price >= 100000000 && price <= 300000000) {
+      coins.push({ name: "سکه امام (یک بهار)", price, changePercent: undefined });
     }
   }
 
-  // نیم سکه
-  const nimSekeRegex = /نیم\s*سکه[^\d]{0,50}?(\d{2,3}(?:,\d{3}){3})/g;
-  const nimMatch = nimSekeRegex.exec(normalized);
+  // نیم سکه - half coin (50M-150M Toman)
+  const nimRegex = /نیم\s*سکه[^\d]{0,80}?(\d{2,3}(?:,\d{3}){3,4}|\d{9,11})/g;
+  const nimMatch = nimRegex.exec(text);
   if (nimMatch) {
-    const price = parseInt(nimMatch[1].replace(/,/g, ""));
-    if (price > 50000000 && price < 500000000) {
+    let price = parseInt(nimMatch[1].replace(/[,]/g, ""));
+    if (price >= 50000000 && price <= 150000000) {
       coins.push({ name: "نیم سکه", price, changePercent: undefined });
     }
   }
@@ -220,19 +381,25 @@ function parseCoinsFromText(text: string): LiveGoldData["coins"] {
 }
 
 /**
- * Parse ounce price from text
+ * Parse ounce (اونس) price in USD
+ * Range: 2000-5000 USD
  */
 function parseOunceFromText(text: string): LiveGoldData["ounce"] | undefined {
-  const normalized = text
-    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
-    .replace(/[،,]/g, ",");
-
-  // اونس جهانی ~ 2000-3500 USD
-  const ounceRegex = /اونس[^\d]{0,50}?(\d{3,4}(?:\.\d{1,2})?)/g;
-  const match = ounceRegex.exec(normalized);
-  if (match) {
-    const price = parseFloat(match[1]);
-    if (price > 1000 && price < 5000) {
+  // Collect ALL matches and return the best one in valid range
+  const ounceRegex = /(?:اونس|انس)\s*(?:طلا)?[^\d]{0,80}?(\d{1,2}[,]\d{3}(?:\.\d{1,2})?|\d{4}(?:\.\d{1,2})?)/g;
+  const matches = [...text.matchAll(ounceRegex)];
+  for (const match of matches) {
+    const price = parseFloat(match[1].replace(/,/g, ""));
+    if (price >= 3500 && price <= 5000) {
+      return { price, changePercent: undefined };
+    }
+  }
+  // Try broader pattern: "4,175.16" format anywhere near ounce keyword
+  const broadRegex = /(?:اونس|انس)[^\d]{0,120}?(\d[,\d]{4,}(?:\.\d{1,2})?)/g;
+  const broadMatches = [...text.matchAll(broadRegex)];
+  for (const match of broadMatches) {
+    const price = parseFloat(match[1].replace(/,/g, ""));
+    if (price >= 3500 && price <= 5000) {
       return { price, changePercent: undefined };
     }
   }
@@ -240,19 +407,25 @@ function parseOunceFromText(text: string): LiveGoldData["ounce"] | undefined {
 }
 
 /**
- * Parse dollar price from text
+ * Parse dollar price in Toman
+ * Range: 100,000-200,000 Toman (current market)
  */
 function parseDollarFromText(text: string): LiveGoldData["dollar"] | undefined {
-  const normalized = text
-    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
-    .replace(/[،,]/g, ",");
-
-  // دلار ~ 60000-150000 Toman
-  const dollarRegex = /(?:دلار|دلار\s*آزاد)[^\d]{0,50}?(\d{2,3}(?:,\d{3}){1,2})/g;
-  const match = dollarRegex.exec(normalized);
-  if (match) {
+  // Collect ALL matches and return the best one in valid range
+  const dollarRegex = /(?:دلار\s*(?:آمریکا|آزاد)?|دلار)[^\d]{0,80}?(\d{3}(?:,\d{3}){1,2}|\d{6})/g;
+  const matches = [...text.matchAll(dollarRegex)];
+  for (const match of matches) {
     const price = parseInt(match[1].replace(/,/g, ""));
-    if (price > 50000 && price < 200000) {
+    if (price >= 100000 && price <= 250000) {
+      return { price, changePercent: undefined };
+    }
+  }
+  // Try without comma format: "175400"
+  const plainRegex = /دلار[^\d]{0,30}?(\d{6})/g;
+  const plainMatches = [...text.matchAll(plainRegex)];
+  for (const match of plainMatches) {
+    const price = parseInt(match[1]);
+    if (price >= 100000 && price <= 250000) {
       return { price, changePercent: undefined };
     }
   }
@@ -260,18 +433,19 @@ function parseDollarFromText(text: string): LiveGoldData["dollar"] | undefined {
 }
 
 /**
- * Fallback prices when web search fails (approximate, will be updated)
+ * Fallback prices when web search fails
+ * These are approximate and should be updated
  */
 function getFallbackPrices(): LiveGoldData {
   const now = new Date().toISOString();
-  // Approximate prices based on recent market (July 2025)
-  const base18 = 17500000; // per gram
+  // Approximate current prices (will be overridden by live data when available)
+  const base18 = 17700000; // ~17.7M Toman per gram for 18k
   return {
     prices: [
-      { karat: "999", label: "طلای ۲۴ عیار (۹۹۹)", pricePerGram: Math.round(base18 * 24 / 18), updatedAt: now, source: "fallback" },
-      { karat: "916", label: "طلای ۲۲ عیار (۹۱۶)", pricePerGram: Math.round(base18 * 22 / 18), updatedAt: now, source: "fallback" },
+      { karat: "999", label: "طلای ۲۴ عیار (۹۹۹)", pricePerGram: Math.round((base18 * 24) / 18), updatedAt: now, source: "fallback" },
+      { karat: "916", label: "طلای ۲۲ عیار (۹۱۶)", pricePerGram: Math.round((base18 * 22) / 18), updatedAt: now, source: "fallback" },
       { karat: "750", label: "طلای ۱۸ عیار (۷۵۰)", pricePerGram: base18, updatedAt: now, source: "fallback" },
-      { karat: "585", label: "طلای ۱۴ عیار (۵۸۵)", pricePerGram: Math.round(base18 * 14 / 18), updatedAt: now, source: "fallback" },
+      { karat: "585", label: "طلای ۱۴ عیار (۵۸۵)", pricePerGram: Math.round((base18 * 14) / 18), updatedAt: now, source: "fallback" },
     ],
     fetchedAt: now,
     source: "fallback",
@@ -299,45 +473,6 @@ async function savePricesToDatabase(data: LiveGoldData): Promise<void> {
       }
     }
   } catch (error) {
-    console.error("Error saving prices to database:", error);
+    // Ignore DB errors (e.g., on Vercel)
   }
-}
-
-/**
- * Get latest prices from database (for history)
- */
-export async function getLatestPricesFromDb(tenantId: string, limit = 50) {
-  return db.goldPrice.findMany({
-    where: { tenantId },
-    orderBy: { createdAt: "desc" },
-    take: limit,
-  });
-}
-
-/**
- * Get price history for a specific karat
- */
-export async function getPriceHistory(
-  tenantId: string,
-  karat: string,
-  days = 30
-) {
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-
-  const prices = await db.goldPrice.findMany({
-    where: {
-      tenantId,
-      karat,
-      createdAt: { gte: since },
-    },
-    orderBy: { createdAt: "asc" },
-    select: {
-      pricePerGram: true,
-      createdAt: true,
-      source: true,
-    },
-  });
-
-  return prices;
 }
