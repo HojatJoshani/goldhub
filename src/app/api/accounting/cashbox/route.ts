@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
+import { DEMO_CASHBOXES, DEMO_BRANCHES } from "@/lib/demo-data";
 
 const VALID_TX_TYPES = ["sale", "expense", "deposit", "withdrawal", "transfer"];
 const VALID_METHODS = ["cash", "card", "transfer"];
@@ -20,71 +22,81 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const cashboxId = searchParams.get("cashboxId");
 
-    if (cashboxId) {
-      // Return a single cashbox with its recent transactions
-      const cashbox = await db.cashbox.findFirst({
-        where: { id: cashboxId, tenantId },
-        include: {
-          branch: { select: { id: true, name: true, code: true } },
-          transactions: {
-            orderBy: { createdAt: "desc" },
-            take: 100,
-          },
-        },
-      });
-      if (!cashbox) {
-        return NextResponse.json(
-          { error: "صندوق یافت نشد" },
-          { status: 404 }
-        );
-      }
-      return NextResponse.json({
-        id: cashbox.id,
-        name: cashbox.name,
-        balance: cashbox.balance,
-        openingBalance: cashbox.openingBalance,
-        closingBalance: cashbox.closingBalance,
-        status: cashbox.status,
-        openedAt: cashbox.openedAt,
-        closedAt: cashbox.closedAt,
-        branch: cashbox.branch,
-        transactions: cashbox.transactions.map((t) => ({
-          id: t.id,
-          type: t.type,
-          amount: t.amount,
-          method: t.method,
-          description: t.description,
-          refId: t.refId,
-          createdAt: t.createdAt,
-        })),
-      });
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoCashboxes(cashboxId));
     }
 
-    const cashboxes = await db.cashbox.findMany({
-      where: { tenantId },
-      include: {
-        branch: { select: { id: true, name: true, code: true } },
-        _count: { select: { transactions: true } },
-      },
-      orderBy: [{ status: "asc" }, { createdAt: "asc" }],
-    });
+    try {
+      if (cashboxId) {
+        // Return a single cashbox with its recent transactions
+        const cashbox = await db.cashbox.findFirst({
+          where: { id: cashboxId, tenantId },
+          include: {
+            branch: { select: { id: true, name: true, code: true } },
+            transactions: {
+              orderBy: { createdAt: "desc" },
+              take: 100,
+            },
+          },
+        });
+        if (!cashbox) {
+          return NextResponse.json(
+            { error: "صندوق یافت نشد" },
+            { status: 404 }
+          );
+        }
+        return NextResponse.json({
+          id: cashbox.id,
+          name: cashbox.name,
+          balance: cashbox.balance,
+          openingBalance: cashbox.openingBalance,
+          closingBalance: cashbox.closingBalance,
+          status: cashbox.status,
+          openedAt: cashbox.openedAt,
+          closedAt: cashbox.closedAt,
+          branch: cashbox.branch,
+          transactions: cashbox.transactions.map((t) => ({
+            id: t.id,
+            type: t.type,
+            amount: t.amount,
+            method: t.method,
+            description: t.description,
+            refId: t.refId,
+            createdAt: t.createdAt,
+          })),
+        });
+      }
 
-    return NextResponse.json({
-      items: cashboxes.map((c) => ({
-        id: c.id,
-        name: c.name,
-        balance: c.balance,
-        openingBalance: c.openingBalance,
-        closingBalance: c.closingBalance,
-        status: c.status,
-        openedAt: c.openedAt,
-        closedAt: c.closedAt,
-        branch: c.branch,
-        transactionsCount: c._count.transactions,
-      })),
-      total: cashboxes.length,
-      totalBalance: cashboxes.reduce((s, c) => s + c.balance, 0),
-    });
+      const cashboxes = await db.cashbox.findMany({
+        where: { tenantId },
+        include: {
+          branch: { select: { id: true, name: true, code: true } },
+          _count: { select: { transactions: true } },
+        },
+        orderBy: [{ status: "asc" }, { createdAt: "asc" }],
+      });
+
+      return NextResponse.json({
+        items: cashboxes.map((c) => ({
+          id: c.id,
+          name: c.name,
+          balance: c.balance,
+          openingBalance: c.openingBalance,
+          closingBalance: c.closingBalance,
+          status: c.status,
+          openedAt: c.openedAt,
+          closedAt: c.closedAt,
+          branch: c.branch,
+          transactionsCount: c._count.transactions,
+        })),
+        total: cashboxes.length,
+        totalBalance: cashboxes.reduce((s, c) => s + c.balance, 0),
+      });
+    } catch (dbError) {
+      console.error("Cashbox DB error, using demo:", dbError);
+      return NextResponse.json(getDemoCashboxes(cashboxId));
+    }
   } catch (error) {
     console.error("Cashbox GET API error:", error);
     return NextResponse.json(
@@ -92,6 +104,48 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo cashboxes data for when database is not available (Vercel)
+ */
+function getDemoCashboxes(cashboxId: string | null) {
+  if (cashboxId) {
+    const cb = DEMO_CASHBOXES.find((c) => c.id === cashboxId);
+    if (!cb) {
+      return { error: "صندوق یافت نشد" };
+    }
+    return {
+      id: cb.id,
+      name: cb.name,
+      balance: cb.balance,
+      openingBalance: cb.openingBalance,
+      closingBalance: cb.closingBalance,
+      status: cb.status,
+      openedAt: cb.openedAt,
+      closedAt: cb.closedAt,
+      branch: { id: cb.branchId, name: DEMO_BRANCHES.find((b) => b.id === cb.branchId)?.name || "شعبه", code: "" },
+      transactions: cb.transactions || [],
+    };
+  }
+
+  const items = DEMO_CASHBOXES.map((c) => ({
+    id: c.id,
+    name: c.name,
+    balance: c.balance,
+    openingBalance: c.openingBalance,
+    closingBalance: c.closingBalance,
+    status: c.status,
+    openedAt: c.openedAt,
+    closedAt: c.closedAt,
+    branch: { id: c.branchId, name: DEMO_BRANCHES.find((b) => b.id === c.branchId)?.name || "شعبه", code: "" },
+    transactionsCount: 0,
+  }));
+  return {
+    items,
+    total: items.length,
+    totalBalance: items.reduce((s, c) => s + c.balance, 0),
+  };
 }
 
 /** POST /api/accounting/cashbox — multi-action (create/open/close/transaction) */

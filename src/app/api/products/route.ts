@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
+import { DEMO_PRODUCTS } from "@/lib/demo-data";
 import type { Prisma } from "@prisma/client";
 
 const VALID_KARATS = ["999", "916", "750", "585", "417", "375"];
@@ -38,48 +40,58 @@ export async function GET(req: NextRequest) {
       Math.max(1, parseInt(url.searchParams.get("pageSize") || "20", 10))
     );
 
-    const where: Prisma.ProductWhereInput = {
-      tenantId,
-      status: { not: "discontinued" },
-    };
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { barcode: { contains: search } },
-        { sku: { contains: search } },
-      ];
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoProducts(search, categoryId, karat, lowStock, page, pageSize));
     }
-    if (categoryId) where.categoryId = categoryId;
-    if (karat && VALID_KARATS.includes(karat)) where.karat = karat;
 
-    // When filtering by low stock we need to compare stock <= minStock.
-    // Prisma cannot compare two columns directly in SQLite, so we fetch
-    // all matching records, filter in memory, then slice for pagination.
-    if (lowStock) {
-      const all = await db.product.findMany({
-        where,
-        include: { category: true },
-        orderBy: { createdAt: "desc" },
-      });
-      const filtered = all.filter((p) => p.stock <= p.minStock);
-      const total = filtered.length;
-      const items = filtered.slice((page - 1) * pageSize, page * pageSize);
+    try {
+      const where: Prisma.ProductWhereInput = {
+        tenantId,
+        status: { not: "discontinued" },
+      };
+
+      if (search) {
+        where.OR = [
+          { name: { contains: search } },
+          { barcode: { contains: search } },
+          { sku: { contains: search } },
+        ];
+      }
+      if (categoryId) where.categoryId = categoryId;
+      if (karat && VALID_KARATS.includes(karat)) where.karat = karat;
+
+      // When filtering by low stock we need to compare stock <= minStock.
+      // Prisma cannot compare two columns directly in SQLite, so we fetch
+      // all matching records, filter in memory, then slice for pagination.
+      if (lowStock) {
+        const all = await db.product.findMany({
+          where,
+          include: { category: true },
+          orderBy: { createdAt: "desc" },
+        });
+        const filtered = all.filter((p) => p.stock <= p.minStock);
+        const total = filtered.length;
+        const items = filtered.slice((page - 1) * pageSize, page * pageSize);
+        return NextResponse.json({ items, total, page, pageSize });
+      }
+
+      const [total, items] = await Promise.all([
+        db.product.count({ where }),
+        db.product.findMany({
+          where,
+          include: { category: true },
+          orderBy: { createdAt: "desc" },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+      ]);
+
       return NextResponse.json({ items, total, page, pageSize });
+    } catch (dbError) {
+      console.error("Products DB error, using demo:", dbError);
+      return NextResponse.json(getDemoProducts(search, categoryId, karat, lowStock, page, pageSize));
     }
-
-    const [total, items] = await Promise.all([
-      db.product.count({ where }),
-      db.product.findMany({
-        where,
-        include: { category: true },
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-    ]);
-
-    return NextResponse.json({ items, total, page, pageSize });
   } catch (error) {
     console.error("Products GET error:", error);
     return NextResponse.json(
@@ -87,6 +99,37 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo products data for when database is not available (Vercel)
+ */
+function getDemoProducts(
+  search: string,
+  categoryId: string | undefined,
+  karat: string | undefined,
+  lowStock: boolean,
+  page: number,
+  pageSize: number
+) {
+  let items = [...DEMO_PRODUCTS];
+  if (search) {
+    const q = search.toLowerCase();
+    items = items.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.barcode && p.barcode.includes(q)) ||
+        p.sku.toLowerCase().includes(q)
+    );
+  }
+  if (categoryId) items = items.filter((p) => p.categoryId === categoryId);
+  if (karat && VALID_KARATS.includes(karat))
+    items = items.filter((p) => p.karat === karat);
+  if (lowStock) items = items.filter((p) => p.stock <= p.minStock);
+
+  const total = items.length;
+  const paged = items.slice((page - 1) * pageSize, page * pageSize);
+  return { items: paged, total, page, pageSize };
 }
 
 export async function POST(req: NextRequest) {

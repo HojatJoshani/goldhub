@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
+import { DEMO_BRANCHES, DEMO_PRODUCTS, DEMO_SALES, DEMO_USERS } from "@/lib/demo-data";
 
 /** GET /api/branches — list branches for the tenant with counts */
 export async function GET(req: NextRequest) {
@@ -14,39 +16,49 @@ export async function GET(req: NextRequest) {
     }
     const tenantId = user.tenantId;
 
-    const branches = await db.branch.findMany({
-      where: { tenantId },
-      orderBy: [{ isMain: "desc" }, { createdAt: "asc" }],
-      include: {
-        _count: {
-          select: {
-            users: true,
-            products: true,
-            sales: true,
-            cashboxes: true,
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoBranches());
+    }
+
+    try {
+      const branches = await db.branch.findMany({
+        where: { tenantId },
+        orderBy: [{ isMain: "desc" }, { createdAt: "asc" }],
+        include: {
+          _count: {
+            select: {
+              users: true,
+              products: true,
+              sales: true,
+              cashboxes: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return NextResponse.json({
-      items: branches.map((b) => ({
-        id: b.id,
-        name: b.name,
-        code: b.code,
-        address: b.address,
-        phone: b.phone,
-        isWarehouse: b.isWarehouse,
-        isMain: b.isMain,
-        status: b.status,
-        createdAt: b.createdAt,
-        usersCount: b._count.users,
-        productsCount: b._count.products,
-        salesCount: b._count.sales,
-        cashboxesCount: b._count.cashboxes,
-      })),
-      total: branches.length,
-    });
+      return NextResponse.json({
+        items: branches.map((b) => ({
+          id: b.id,
+          name: b.name,
+          code: b.code,
+          address: b.address,
+          phone: b.phone,
+          isWarehouse: b.isWarehouse,
+          isMain: b.isMain,
+          status: b.status,
+          createdAt: b.createdAt,
+          usersCount: b._count.users,
+          productsCount: b._count.products,
+          salesCount: b._count.sales,
+          cashboxesCount: b._count.cashboxes,
+        })),
+        total: branches.length,
+      });
+    } catch (dbError) {
+      console.error("Branches DB error, using demo:", dbError);
+      return NextResponse.json(getDemoBranches());
+    }
   } catch (error) {
     console.error("Branches GET API error:", error);
     return NextResponse.json(
@@ -54,6 +66,21 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo branches data for when database is not available (Vercel)
+ */
+function getDemoBranches() {
+  const items = DEMO_BRANCHES.map((b) => ({
+    ...b,
+    createdAt: new Date(),
+    usersCount: DEMO_USERS.filter((u) => u.branchId === b.id).length,
+    productsCount: DEMO_PRODUCTS.filter((p) => p.branchId === b.id).length,
+    salesCount: DEMO_SALES.filter((s) => s.branchId === b.id).length,
+    cashboxesCount: 0,
+  }));
+  return { items, total: items.length };
 }
 
 /** POST /api/branches — create a new branch */

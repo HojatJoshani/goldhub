@@ -1589,3 +1589,86 @@ Stage Summary:
 - خطای ورود در Vercel با demo users fallback حل شد
 - error boundaries اضافه شد
 - آماده commit و push
+
+---
+Task ID: VERCEL-FALLBACK
+Agent: Main (Z.ai Code)
+Task: افزودن demo data fallback به API routes برای Vercel deployment
+
+Work Log:
+- مشکل: SQLite در Vercel کار نمی‌کند (read-only filesystem)
+- راه‌حل: افزودن fallback به demo data در ۲۵ API route
+
+الگوی استفاده‌شده (بر اساس dashboard route):
+1. Import `isDbAvailable` از `@/lib/db-check`
+2. Import داده‌های demo از `@/lib/demo-data`
+3. در شروع GET handler: `if (!(await isDbAvailable())) return NextResponse.json(getDemoData())`
+4. Wrap کردن DB code در try/catch که در صورت خطا به demo برمی‌گردد
+5. ساخت تابع `getDemoData()` برای هر endpoint
+
+مسیرهای به‌روزرسانی‌شده (۲۵ route):
+
+**محصولات و کاتالوگ:**
+- `src/app/api/products/route.ts` - GET با pagination و فیلتر (search, category, karat, lowStock)
+- `src/app/api/categories/route.ts` - GET با _count products
+- `src/app/api/barcode/route.ts` - GET با فیلتر ids/all
+- `src/app/api/marketplace/route.ts` - GET با search/filter/sort + stores + categories
+
+**مشتریان و سفارشات:**
+- `src/app/api/customers/route.ts` - GET با pagination/sort/search + stats + birthdays
+- `src/app/api/orders/route.ts` - GET با فیلتر (type/status/customer/assigned) + stats
+
+**سازمانی:**
+- `src/app/api/branches/route.ts` - GET با _count (users/products/sales/cashboxes)
+- `src/app/api/staff/route.ts` - GET (DEMO_USERS فیلتر شده)
+- `src/app/api/transfers/route.ts` - GET (empty array در demo)
+
+**حسابداری:**
+- `src/app/api/accounting/summary/route.ts` - GET با محاسبه income/expenses/profit/daily از DEMO_SALES و DEMO_EXPENSES
+- `src/app/api/accounting/cashbox/route.ts` - GET (تکی یا لیست) با branch info
+- `src/app/api/accounting/expenses/route.ts` - GET با فیلتر (category/branch/date range)
+
+**گزارش‌ها:**
+- `src/app/api/reports/sales/route.ts` - GET با time series, payment methods, branches, hours, top products
+- `src/app/api/reports/inventory/route.ts` - GET با karat/category/aging/top value
+- `src/app/api/reports/customers/route.ts` - GET با loyalty tiers, top customers, trend
+- `src/app/api/reports/staff/route.ts` - GET با sales aggregation per cashier
+- `src/app/api/reports/financial/route.ts` - GET با daily P&L breakdown, expenses by category
+
+**مدیریت:**
+- `src/app/api/admin/users/route.ts` - GET با pagination/search/filter (role/status/branch)
+- `src/app/api/admin/audit-logs/route.ts` - GET با pagination/filter + distinct actions/entities
+- `src/app/api/admin/tenant/route.ts` - GET (DEMO_TENANT با parsed settings)
+
+**قیمت طلا:**
+- `src/app/api/gold-prices/history/route.ts` - GET با synthetic history از DEMO_GOLD_PRICES
+- `src/app/api/gold-prices/live/route.ts` - Already has fallback (getFallbackPrices) - checked
+
+**فروش و مالیات:**
+- `src/app/api/sales/route.ts` - GET با pagination/filter (paymentMethod/date range)
+- `src/app/api/tax/route.ts` - GET با محاسبه VAT/making tax از DEMO_SALES
+- `src/app/api/returns/route.ts` - GET (empty در demo - no refunded sales)
+
+**AI:**
+- `src/app/api/ai/history/route.ts` - GET (empty array fallback)
+
+نکات کلیدی:
+- تمام متن‌های فارسی حفظ شدند
+- Business logic موجود بدون تغییر باقی ماند
+- فقط fallback اضافه شد
+- فایل‌های `src/app/page.tsx`, `src/app/layout.tsx`, `prisma/schema.prisma` دست‌نخورده باقی ماندند
+- هر route تابع `getDemoData()` اختصاصی خود را دارد که ساختار همانند DB response را برمی‌گرداند
+- Pagination و فیلترها در demo data هم پشتیبانی می‌شوند
+- synthetic history برای gold prices با استفاده از sine wave variance ±2% تولید می‌شود
+- DEMO_SALES تمامی 30 روز گذشته را به‌صورت random تولید می‌کند (در demo-data.ts)
+
+تست:
+- lint: ۰ خطا ✓
+- TypeScript: ۰ خطا در src/app/api/* ✓
+- تمام ۲۵ route الگوی fallback را پیاده‌سازی کردند
+
+Stage Summary:
+- اپ GoldHub حالا روی Vercel بدون دیتابیس هم کار می‌کند
+- کاربر با login کردن (admin@goldhub.ir / admin123) به اپ دسترسی دارد
+- تمام ماژول‌ها (dashboard, products, customers, orders, accounting, reports, admin, ...) داده‌های demo نمایش می‌دهند
+- آماده commit و push

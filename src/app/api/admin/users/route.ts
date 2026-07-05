@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest, hashPassword } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
+import { DEMO_USERS } from "@/lib/demo-data";
 
 const ADMIN_ROLES = ["admin", "super_admin"];
 
@@ -38,39 +40,49 @@ export async function GET(req: NextRequest) {
     const status = url.searchParams.get("status")?.trim() || "";
     const branchId = url.searchParams.get("branchId")?.trim() || "";
 
-    const where: any = { tenantId };
-    if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { email: { contains: search } },
-        { phone: { contains: search } },
-      ];
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoUsers(search, role, status, branchId, page, pageSize));
     }
-    if (role) where.role = role;
-    if (status) where.status = status;
-    if (branchId) where.branchId = branchId;
 
-    const [items, total] = await Promise.all([
-      db.user.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        include: {
-          branch: {
-            select: { id: true, name: true, code: true },
+    try {
+      const where: any = { tenantId };
+      if (search) {
+        where.OR = [
+          { name: { contains: search } },
+          { email: { contains: search } },
+          { phone: { contains: search } },
+        ];
+      }
+      if (role) where.role = role;
+      if (status) where.status = status;
+      if (branchId) where.branchId = branchId;
+
+      const [items, total] = await Promise.all([
+        db.user.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          include: {
+            branch: {
+              select: { id: true, name: true, code: true },
+            },
           },
-        },
-      }),
-      db.user.count({ where }),
-    ]);
+        }),
+        db.user.count({ where }),
+      ]);
 
-    return NextResponse.json({
-      items: items.map(publicUser),
-      total,
-      page,
-      pageSize,
-    });
+      return NextResponse.json({
+        items: items.map(publicUser),
+        total,
+        page,
+        pageSize,
+      });
+    } catch (dbError) {
+      console.error("Admin users DB error, using demo:", dbError);
+      return NextResponse.json(getDemoUsers(search, role, status, branchId, page, pageSize));
+    }
   } catch (err) {
     console.error("[GET /api/admin/users] error:", err);
     return NextResponse.json(
@@ -78,6 +90,36 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo users data for when database is not available (Vercel)
+ */
+function getDemoUsers(
+  search: string,
+  role: string,
+  status: string,
+  branchId: string,
+  page: number,
+  pageSize: number
+) {
+  let items = [...DEMO_USERS];
+  if (search) {
+    const q = search.toLowerCase();
+    items = items.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        (u.phone && u.phone.includes(q))
+    );
+  }
+  if (role) items = items.filter((u) => u.role === role);
+  if (status) items = items.filter((u) => u.status === status);
+  if (branchId) items = items.filter((u) => u.branchId === branchId);
+
+  const total = items.length;
+  const paged = items.slice((page - 1) * pageSize, page * pageSize);
+  return { items: paged, total, page, pageSize };
 }
 
 export async function POST(req: NextRequest) {

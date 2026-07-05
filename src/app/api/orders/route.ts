@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
+import { DEMO_ORDERS } from "@/lib/demo-data";
 
 const VALID_TYPES = ["custom", "repair", "manufacturing"];
 const VALID_STATUSES = [
@@ -47,116 +49,126 @@ export async function GET(req: NextRequest) {
     const customerId = url.searchParams.get("customerId") || undefined;
     const assignedToId = url.searchParams.get("assignedToId") || undefined;
 
-    // Build where clause
-    const where: Record<string, unknown> = { tenantId };
-    if (type && VALID_TYPES.includes(type)) where.type = type;
-    if (status && VALID_STATUSES.includes(status)) where.status = status;
-    if (customerId) where.customerId = customerId;
-    if (assignedToId) where.assignedToId = assignedToId;
-    if (search) {
-      (where as any).OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
-        { orderNumber: { contains: search } },
-        { customer: { name: { contains: search } } },
-      ];
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoOrders(search, type, status, customerId, assignedToId, page, pageSize));
     }
 
-    const [items, total] = await Promise.all([
-      db.customOrder.findMany({
-        where,
-        include: {
-          customer: {
-            select: { id: true, name: true, phone: true },
+    try {
+      // Build where clause
+      const where: Record<string, unknown> = { tenantId };
+      if (type && VALID_TYPES.includes(type)) where.type = type;
+      if (status && VALID_STATUSES.includes(status)) where.status = status;
+      if (customerId) where.customerId = customerId;
+      if (assignedToId) where.assignedToId = assignedToId;
+      if (search) {
+        (where as any).OR = [
+          { title: { contains: search } },
+          { description: { contains: search } },
+          { orderNumber: { contains: search } },
+          { customer: { name: { contains: search } } },
+        ];
+      }
+
+      const [items, total] = await Promise.all([
+        db.customOrder.findMany({
+          where,
+          include: {
+            customer: {
+              select: { id: true, name: true, phone: true },
+            },
+            assignedTo: {
+              select: { id: true, name: true, role: true },
+            },
           },
-          assignedTo: {
-            select: { id: true, name: true, role: true },
-          },
+          orderBy: { createdAt: "desc" },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        db.customOrder.count({ where }),
+      ]);
+
+      // Compute aggregated stats for current tenant
+      const allOrders = await db.customOrder.findMany({
+        where: { tenantId },
+        select: {
+          id: true,
+          status: true,
+          type: true,
+          createdAt: true,
+          deadline: true,
         },
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      db.customOrder.count({ where }),
-    ]);
-
-    // Compute aggregated stats for current tenant
-    const allOrders = await db.customOrder.findMany({
-      where: { tenantId },
-      select: {
-        id: true,
-        status: true,
-        type: true,
-        createdAt: true,
-        deadline: true,
-      },
-    });
-
-    const inProgressStatuses = [
-      "pending",
-      "design",
-      "manufacturing",
-      "polishing",
-      "ready",
-    ];
-    const inProgress = allOrders.filter((o) =>
-      inProgressStatuses.includes(o.status)
-    ).length;
-    const delivered = allOrders.filter(
-      (o) => o.status === "delivered"
-    ).length;
-    const repairs = allOrders.filter(
-      (o) => o.type === "repair" && o.status !== "cancelled"
-    ).length;
-    const cancelled = allOrders.filter(
-      (o) => o.status === "cancelled"
-    ).length;
-
-    // Average delivery time (days) for delivered orders.
-    // We approximate deliveredAt by the latest timeline "delivered" entry;
-    // here we use order.createdAt → first delivered timeline entry.
-    const deliveredOrders = allOrders.filter(
-      (o) => o.status === "delivered"
-    );
-    let avgDeliveryDays = 0;
-    if (deliveredOrders.length > 0) {
-      const deliveredIds = deliveredOrders.map((o) => o.id);
-      const timelines = await db.orderTimeline.findMany({
-        where: { orderId: { in: deliveredIds }, status: "delivered" },
-        select: { orderId: true, createdAt: true },
-        orderBy: { createdAt: "asc" },
       });
-      const byOrder = new Map<string, Date>();
-      for (const t of timelines) {
-        // take the first "delivered" entry per order
-        if (!byOrder.has(t.orderId)) byOrder.set(t.orderId, t.createdAt);
-      }
-      let totalDays = 0;
-      let count = 0;
-      for (const o of deliveredOrders) {
-        const d = byOrder.get(o.id);
-        if (!d) continue;
-        const diffMs = d.getTime() - new Date(o.createdAt).getTime();
-        const days = Math.max(0, diffMs / (1000 * 60 * 60 * 24));
-        totalDays += days;
-        count++;
-      }
-      avgDeliveryDays = count > 0 ? totalDays / count : 0;
-    }
 
-    return NextResponse.json({
-      items,
-      total,
-      page,
-      pageSize,
-      stats: {
-        inProgress,
-        delivered,
-        repairs,
-        cancelled,
-        avgDeliveryDays,
-      },
-    });
+      const inProgressStatuses = [
+        "pending",
+        "design",
+        "manufacturing",
+        "polishing",
+        "ready",
+      ];
+      const inProgress = allOrders.filter((o) =>
+        inProgressStatuses.includes(o.status)
+      ).length;
+      const delivered = allOrders.filter(
+        (o) => o.status === "delivered"
+      ).length;
+      const repairs = allOrders.filter(
+        (o) => o.type === "repair" && o.status !== "cancelled"
+      ).length;
+      const cancelled = allOrders.filter(
+        (o) => o.status === "cancelled"
+      ).length;
+
+      // Average delivery time (days) for delivered orders.
+      // We approximate deliveredAt by the latest timeline "delivered" entry;
+      // here we use order.createdAt → first delivered timeline entry.
+      const deliveredOrders = allOrders.filter(
+        (o) => o.status === "delivered"
+      );
+      let avgDeliveryDays = 0;
+      if (deliveredOrders.length > 0) {
+        const deliveredIds = deliveredOrders.map((o) => o.id);
+        const timelines = await db.orderTimeline.findMany({
+          where: { orderId: { in: deliveredIds }, status: "delivered" },
+          select: { orderId: true, createdAt: true },
+          orderBy: { createdAt: "asc" },
+        });
+        const byOrder = new Map<string, Date>();
+        for (const t of timelines) {
+          // take the first "delivered" entry per order
+          if (!byOrder.has(t.orderId)) byOrder.set(t.orderId, t.createdAt);
+        }
+        let totalDays = 0;
+        let count = 0;
+        for (const o of deliveredOrders) {
+          const d = byOrder.get(o.id);
+          if (!d) continue;
+          const diffMs = d.getTime() - new Date(o.createdAt).getTime();
+          const days = Math.max(0, diffMs / (1000 * 60 * 60 * 24));
+          totalDays += days;
+          count++;
+        }
+        avgDeliveryDays = count > 0 ? totalDays / count : 0;
+      }
+
+      return NextResponse.json({
+        items,
+        total,
+        page,
+        pageSize,
+        stats: {
+          inProgress,
+          delivered,
+          repairs,
+          cancelled,
+          avgDeliveryDays,
+        },
+      });
+    } catch (dbError) {
+      console.error("Orders DB error, using demo:", dbError);
+      return NextResponse.json(getDemoOrders(search, type, status, customerId, assignedToId, page, pageSize));
+    }
   } catch (err) {
     console.error("[GET /api/orders] error:", err);
     return NextResponse.json(
@@ -164,6 +176,59 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo orders data for when database is not available (Vercel)
+ */
+function getDemoOrders(
+  search: string,
+  type: string | undefined,
+  status: string | undefined,
+  customerId: string | undefined,
+  assignedToId: string | undefined,
+  page: number,
+  pageSize: number
+) {
+  let items = [...DEMO_ORDERS];
+  if (search) {
+    const q = search.toLowerCase();
+    items = items.filter(
+      (o) =>
+        o.title.toLowerCase().includes(q) ||
+        (o.description && o.description.toLowerCase().includes(q)) ||
+        o.orderNumber.toLowerCase().includes(q) ||
+        (o.customer && o.customer.name.toLowerCase().includes(q))
+    );
+  }
+  if (type && VALID_TYPES.includes(type)) items = items.filter((o) => o.type === type);
+  if (status && VALID_STATUSES.includes(status)) items = items.filter((o) => o.status === status);
+  if (customerId) items = items.filter((o) => o.customerId === customerId);
+  if (assignedToId) items = items.filter((o) => o.assignedToId === assignedToId);
+
+  const total = items.length;
+  const paged = items.slice((page - 1) * pageSize, page * pageSize);
+
+  const all = DEMO_ORDERS;
+  const inProgressStatuses = ["pending", "design", "manufacturing", "polishing", "ready"];
+  const inProgress = all.filter((o) => inProgressStatuses.includes(o.status)).length;
+  const delivered = all.filter((o) => o.status === "delivered").length;
+  const repairs = all.filter((o) => o.type === "repair" && o.status !== "cancelled").length;
+  const cancelled = all.filter((o) => o.status === "cancelled").length;
+
+  return {
+    items: paged,
+    total,
+    page,
+    pageSize,
+    stats: {
+      inProgress,
+      delivered,
+      repairs,
+      cancelled,
+      avgDeliveryDays: 5.5,
+    },
+  };
 }
 
 export async function POST(req: NextRequest) {

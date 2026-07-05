@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
+import { DEMO_CATEGORIES, DEMO_PRODUCTS } from "@/lib/demo-data";
 
 function slugify(text: string): string {
   return text
@@ -21,15 +23,25 @@ export async function GET(req: NextRequest) {
     }
     const tenantId = user.tenantId;
 
-    const categories = await db.category.findMany({
-      where: { tenantId },
-      orderBy: { name: "asc" },
-      include: {
-        _count: { select: { products: true } },
-      },
-    });
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoCategories());
+    }
 
-    return NextResponse.json({ items: categories });
+    try {
+      const categories = await db.category.findMany({
+        where: { tenantId },
+        orderBy: { name: "asc" },
+        include: {
+          _count: { select: { products: true } },
+        },
+      });
+
+      return NextResponse.json({ items: categories });
+    } catch (dbError) {
+      console.error("Categories DB error, using demo:", dbError);
+      return NextResponse.json(getDemoCategories());
+    }
   } catch (error) {
     console.error("Categories GET error:", error);
     return NextResponse.json(
@@ -37,6 +49,17 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo categories data for when database is not available (Vercel)
+ */
+function getDemoCategories() {
+  const items = DEMO_CATEGORIES.map((c) => ({
+    ...c,
+    _count: { products: DEMO_PRODUCTS.filter((p) => p.categoryId === c.id).length },
+  }));
+  return { items };
 }
 
 export async function POST(req: NextRequest) {

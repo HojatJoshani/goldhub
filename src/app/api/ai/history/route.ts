@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
 
 export const runtime = "nodejs";
 
@@ -21,38 +22,48 @@ export async function GET(req: NextRequest) {
     }
     const tenantId = user.tenantId;
 
-    const records = await db.aIQuery.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      select: {
-        id: true,
-        type: true,
-        input: true,
-        output: true,
-        createdAt: true,
-        meta: true,
-      },
-    });
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json({ items: [] });
+    }
 
-    const items = records.map((r) => ({
-      id: r.id,
-      type: r.type,
-      typeLabel: TYPE_LABELS[r.type] || r.type,
-      input:
-        r.input === "[image]"
-          ? "[تصویر]"
-          : r.input.length > 240
-          ? r.input.slice(0, 240) + "…"
-          : r.input,
-      output:
-        r.output.length > 320
+    try {
+      const records = await db.aIQuery.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          type: true,
+          input: true,
+          output: true,
+          createdAt: true,
+          meta: true,
+        },
+      });
+
+      const items = records.map((r) => ({
+        id: r.id,
+        type: r.type,
+        typeLabel: TYPE_LABELS[r.type] || r.type,
+        input:
+          r.input === "[image]"
+            ? "[تصویر]"
+            : r.input.length > 240
+            ? r.input.slice(0, 240) + "…"
+            : r.input,
+        output:
+          r.output.length > 320
           ? r.output.slice(0, 320) + "…"
           : r.output,
-      createdAt: r.createdAt,
-    }));
+        createdAt: r.createdAt,
+      }));
 
-    return NextResponse.json({ items });
+      return NextResponse.json({ items });
+    } catch (dbError) {
+      console.error("AI history DB error, using demo:", dbError);
+      return NextResponse.json({ items: [] });
+    }
   } catch (error) {
     console.error("AI history route error:", error);
     return NextResponse.json(

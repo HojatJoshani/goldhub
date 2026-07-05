@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
+import { DEMO_CUSTOMERS } from "@/lib/demo-data";
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,100 +25,110 @@ export async function GET(req: NextRequest) {
     const sort = url.searchParams.get("sort") || "createdAt"; // totalSpent | createdAt | name | loyaltyPoints
     const order = url.searchParams.get("order") === "asc" ? "asc" : "desc";
 
-    // Build where clause
-    const where: any = { tenantId };
-    if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { phone: { contains: search } },
-        { email: { contains: search } },
-      ];
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoCustomers(search, sort, order, page, pageSize));
     }
 
-    // Sort field whitelist
-    const sortFieldMap: Record<string, string> = {
-      totalSpent: "totalSpent",
-      createdAt: "createdAt",
-      name: "name",
-      loyaltyPoints: "loyaltyPoints",
-      totalOrders: "totalOrders",
-    };
-    const sortField = sortFieldMap[sort] || "createdAt";
+    try {
+      // Build where clause
+      const where: any = { tenantId };
+      if (search) {
+        where.OR = [
+          { name: { contains: search } },
+          { phone: { contains: search } },
+          { email: { contains: search } },
+        ];
+      }
 
-    const [items, total] = await Promise.all([
-      db.customer.findMany({
-        where,
-        orderBy: { [sortField]: order },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+      // Sort field whitelist
+      const sortFieldMap: Record<string, string> = {
+        totalSpent: "totalSpent",
+        createdAt: "createdAt",
+        name: "name",
+        loyaltyPoints: "loyaltyPoints",
+        totalOrders: "totalOrders",
+      };
+      const sortField = sortFieldMap[sort] || "createdAt";
+
+      const [items, total] = await Promise.all([
+        db.customer.findMany({
+          where,
+          orderBy: { [sortField]: order },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+            address: true,
+            birthday: true,
+            nationalId: true,
+            loyaltyPoints: true,
+            totalSpent: true,
+            totalOrders: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+        db.customer.count({ where }),
+      ]);
+
+      // Aggregate stats for current view (used by header summary)
+      const agg = await db.customer.aggregate({
+        where: { tenantId },
+        _sum: { totalSpent: true, loyaltyPoints: true },
+        _avg: { totalSpent: true },
+        _count: { _all: true },
+      });
+
+      // Birthdays in current month (Gregorian)
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1; // 1-12
+      const allBirthdayCustomers = await db.customer.findMany({
+        where: {
+          tenantId,
+          birthday: { not: null },
+        },
         select: {
           id: true,
           name: true,
           phone: true,
-          email: true,
-          address: true,
           birthday: true,
-          nationalId: true,
-          loyaltyPoints: true,
           totalSpent: true,
-          totalOrders: true,
-          notes: true,
-          createdAt: true,
-          updatedAt: true,
+          loyaltyPoints: true,
         },
-      }),
-      db.customer.count({ where }),
-    ]);
-
-    // Aggregate stats for current view (used by header summary)
-    const agg = await db.customer.aggregate({
-      where: { tenantId },
-      _sum: { totalSpent: true, loyaltyPoints: true },
-      _avg: { totalSpent: true },
-      _count: { _all: true },
-    });
-
-    // Birthdays in current month (Gregorian)
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1; // 1-12
-    const allBirthdayCustomers = await db.customer.findMany({
-      where: {
-        tenantId,
-        birthday: { not: null },
-      },
-      select: {
-        id: true,
-        name: true,
-        phone: true,
-        birthday: true,
-        totalSpent: true,
-        loyaltyPoints: true,
-      },
-    });
-    const birthdaysThisMonth = allBirthdayCustomers
-      .filter((c) => {
-        if (!c.birthday) return false;
-        return new Date(c.birthday).getMonth() + 1 === currentMonth;
-      })
-      .sort((a, b) => {
-        const da = a.birthday ? new Date(a.birthday).getDate() : 99;
-        const db2 = b.birthday ? new Date(b.birthday).getDate() : 99;
-        return da - db2;
       });
+      const birthdaysThisMonth = allBirthdayCustomers
+        .filter((c) => {
+          if (!c.birthday) return false;
+          return new Date(c.birthday).getMonth() + 1 === currentMonth;
+        })
+        .sort((a, b) => {
+          const da = a.birthday ? new Date(a.birthday).getDate() : 99;
+          const db2 = b.birthday ? new Date(b.birthday).getDate() : 99;
+          return da - db2;
+        });
 
-    return NextResponse.json({
-      items,
-      total,
-      page,
-      pageSize,
-      stats: {
-        count: agg._count._all,
-        totalSpent: agg._sum.totalSpent || 0,
-        avgSpent: agg._avg.totalSpent || 0,
-        totalLoyalty: agg._sum.loyaltyPoints || 0,
-      },
-      birthdaysThisMonth,
-    });
+      return NextResponse.json({
+        items,
+        total,
+        page,
+        pageSize,
+        stats: {
+          count: agg._count._all,
+          totalSpent: agg._sum.totalSpent || 0,
+          avgSpent: agg._avg.totalSpent || 0,
+          totalLoyalty: agg._sum.loyaltyPoints || 0,
+        },
+        birthdaysThisMonth,
+      });
+    } catch (dbError) {
+      console.error("Customers DB error, using demo:", dbError);
+      return NextResponse.json(getDemoCustomers(search, sort, order, page, pageSize));
+    }
   } catch (err) {
     console.error("[GET /api/customers] error:", err);
     return NextResponse.json(
@@ -124,6 +136,73 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo customers data for when database is not available (Vercel)
+ */
+function getDemoCustomers(
+  search: string,
+  sort: string,
+  order: "asc" | "desc",
+  page: number,
+  pageSize: number
+) {
+  let items = [...DEMO_CUSTOMERS];
+  if (search) {
+    const q = search.toLowerCase();
+    items = items.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.phone && c.phone.includes(q)) ||
+        ((c as any).email && (c as any).email.toLowerCase().includes(q))
+    );
+  }
+
+  const sortFieldMap: Record<string, string> = {
+    totalSpent: "totalSpent",
+    createdAt: "createdAt",
+    name: "name",
+    loyaltyPoints: "loyaltyPoints",
+    totalOrders: "totalOrders",
+  };
+  const sortField = sortFieldMap[sort] || "createdAt";
+  items.sort((a: any, b: any) => {
+    const av = a[sortField];
+    const bv = b[sortField];
+    if (av === bv) return 0;
+    const cmp = av > bv ? 1 : -1;
+    return order === "asc" ? cmp : -cmp;
+  });
+
+  const total = items.length;
+  const paged = items.slice((page - 1) * pageSize, page * pageSize);
+
+  const totalSpent = DEMO_CUSTOMERS.reduce((s, c) => s + c.totalSpent, 0);
+  const totalLoyalty = DEMO_CUSTOMERS.reduce((s, c) => s + c.loyaltyPoints, 0);
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const birthdaysThisMonth = DEMO_CUSTOMERS.filter(
+    (c) => c.birthday && new Date(c.birthday).getMonth() + 1 === currentMonth
+  ).sort((a, b) => {
+    const da = a.birthday ? new Date(a.birthday).getDate() : 99;
+    const db2 = b.birthday ? new Date(b.birthday).getDate() : 99;
+    return da - db2;
+  });
+
+  return {
+    items: paged,
+    total,
+    page,
+    pageSize,
+    stats: {
+      count: DEMO_CUSTOMERS.length,
+      totalSpent,
+      avgSpent: DEMO_CUSTOMERS.length > 0 ? totalSpent / DEMO_CUSTOMERS.length : 0,
+      totalLoyalty,
+    },
+    birthdaysThisMonth,
+  };
 }
 
 export async function POST(req: NextRequest) {

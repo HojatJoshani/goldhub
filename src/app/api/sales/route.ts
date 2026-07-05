@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
+import { DEMO_SALES } from "@/lib/demo-data";
 
 const VALID_PAYMENT_METHODS = ["cash", "card", "transfer", "gold", "mixed"];
 
@@ -40,59 +42,121 @@ export async function GET(req: NextRequest) {
     const startDate = searchParams.get("startDate") || "";
     const endDate = searchParams.get("endDate") || "";
 
-    const where: any = { tenantId };
-    if (paymentMethod) where.paymentMethod = paymentMethod;
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) where.createdAt.gte = new Date(startDate);
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        where.createdAt.lte = end;
-      }
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoSales(paymentMethod, startDate, endDate, page, pageSize));
     }
 
-    const [items, total] = await Promise.all([
-      db.sale.findMany({
-        where,
-        include: {
-          customer: { select: { id: true, name: true, phone: true } },
-          cashier: { select: { id: true, name: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      db.sale.count({ where }),
-    ]);
+    try {
+      const where: any = { tenantId };
+      if (paymentMethod) where.paymentMethod = paymentMethod;
+      if (startDate || endDate) {
+        where.createdAt = {};
+        if (startDate) where.createdAt.gte = new Date(startDate);
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          where.createdAt.lte = end;
+        }
+      }
 
-    return NextResponse.json({
-      items: items.map((s) => ({
-        id: s.id,
-        invoiceNumber: s.invoiceNumber,
-        customerId: s.customerId,
-        cashierId: s.cashierId,
-        subtotal: s.subtotal,
-        discount: s.discount,
-        tax: s.tax,
-        makingTotal: s.makingTotal,
-        total: s.total,
-        paymentMethod: s.paymentMethod,
-        paymentStatus: s.paymentStatus,
-        status: s.status,
-        notes: s.notes,
-        createdAt: s.createdAt,
-        customer: s.customer,
-        cashier: s.cashier,
-      })),
-      total,
-      page,
-      pageSize,
-    });
+      const [items, total] = await Promise.all([
+        db.sale.findMany({
+          where,
+          include: {
+            customer: { select: { id: true, name: true, phone: true } },
+            cashier: { select: { id: true, name: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        db.sale.count({ where }),
+      ]);
+
+      return NextResponse.json({
+        items: items.map((s) => ({
+          id: s.id,
+          invoiceNumber: s.invoiceNumber,
+          customerId: s.customerId,
+          cashierId: s.cashierId,
+          subtotal: s.subtotal,
+          discount: s.discount,
+          tax: s.tax,
+          makingTotal: s.makingTotal,
+          total: s.total,
+          paymentMethod: s.paymentMethod,
+          paymentStatus: s.paymentStatus,
+          status: s.status,
+          notes: s.notes,
+          createdAt: s.createdAt,
+          customer: s.customer,
+          cashier: s.cashier,
+        })),
+        total,
+        page,
+        pageSize,
+      });
+    } catch (dbError) {
+      console.error("Sales DB error, using demo:", dbError);
+      return NextResponse.json(getDemoSales(paymentMethod, startDate, endDate, page, pageSize));
+    }
   } catch (error) {
     console.error("Sales GET API error:", error);
     return NextResponse.json({ error: "خطا در دریافت لیست فروش" }, { status: 500 });
   }
+}
+
+/**
+ * Demo sales data for when database is not available (Vercel)
+ */
+function getDemoSales(
+  paymentMethod: string,
+  startDate: string,
+  endDate: string,
+  page: number,
+  pageSize: number
+) {
+  let items = [...DEMO_SALES];
+  if (paymentMethod) items = items.filter((s) => s.paymentMethod === paymentMethod);
+  if (startDate) {
+    const sd = new Date(startDate);
+    items = items.filter((s) => s.createdAt >= sd);
+  }
+  if (endDate) {
+    const ed = new Date(endDate);
+    ed.setHours(23, 59, 59, 999);
+    items = items.filter((s) => s.createdAt <= ed);
+  }
+
+  items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+  const total = items.length;
+  const paged = items.slice((page - 1) * pageSize, page * pageSize);
+
+  return {
+    items: paged.map((s) => ({
+      id: s.id,
+      invoiceNumber: s.invoiceNumber,
+      customerId: s.customerId,
+      cashierId: s.cashierId,
+      subtotal: s.subtotal,
+      discount: s.discount,
+      tax: s.tax,
+      makingTotal: (s as any).makingTotal || 0,
+      total: s.total,
+      paymentMethod: s.paymentMethod,
+      paymentStatus: s.paymentStatus,
+      status: s.status,
+      notes: s.notes,
+      createdAt: s.createdAt,
+      customer: s.customer,
+      cashier: s.cashier,
+    })),
+    total,
+    page,
+    pageSize,
+  };
 }
 
 export async function POST(req: NextRequest) {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
+import { DEMO_SALES, DEMO_BRANCHES } from "@/lib/demo-data";
 
 type GroupBy = "day" | "week" | "month";
 
@@ -61,192 +63,202 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Fetch all completed sales in the range with key fields
-    const sales = await db.sale.findMany({
-      where: {
-        tenantId,
-        status: "completed",
-        createdAt: { gte: from, lte: to },
-      },
-      select: {
-        id: true,
-        total: true,
-        subtotal: true,
-        discount: true,
-        makingTotal: true,
-        paymentMethod: true,
-        branchId: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: "asc" },
-    });
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoSalesReport(from, to, groupBy));
+    }
 
-    const totalSales = sales.reduce((s, x) => s + x.total, 0);
-    const totalSubtotal = sales.reduce((s, x) => s + x.subtotal, 0);
-    const totalDiscount = sales.reduce((s, x) => s + x.discount, 0);
-    const totalMaking = sales.reduce((s, x) => s + x.makingTotal, 0);
-    const count = sales.length;
-    const avgOrderValue = count > 0 ? totalSales / count : 0;
+    try {
+      // Fetch all completed sales in the range with key fields
+      const sales = await db.sale.findMany({
+        where: {
+          tenantId,
+          status: "completed",
+          createdAt: { gte: from, lte: to },
+        },
+        select: {
+          id: true,
+          total: true,
+          subtotal: true,
+          discount: true,
+          makingTotal: true,
+          paymentMethod: true,
+          branchId: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "asc" },
+      });
 
-    // ---- Grouped time series for chart ----
-    type Bucket = { label: string; key: string; total: number; count: number };
-    const bucketMap = new Map<string, Bucket>();
+      const totalSales = sales.reduce((s, x) => s + x.total, 0);
+      const totalSubtotal = sales.reduce((s, x) => s + x.subtotal, 0);
+      const totalDiscount = sales.reduce((s, x) => s + x.discount, 0);
+      const totalMaking = sales.reduce((s, x) => s + x.makingTotal, 0);
+      const count = sales.length;
+      const avgOrderValue = count > 0 ? totalSales / count : 0;
 
-    const ensureBucket = (key: string, label: string) => {
-      if (!bucketMap.has(key)) {
-        bucketMap.set(key, { label, key, total: 0, count: 0 });
+      // ---- Grouped time series for chart ----
+      type Bucket = { label: string; key: string; total: number; count: number };
+      const bucketMap = new Map<string, Bucket>();
+
+      const ensureBucket = (key: string, label: string) => {
+        if (!bucketMap.has(key)) {
+          bucketMap.set(key, { label, key, total: 0, count: 0 });
+        }
+        return bucketMap.get(key)!;
+      };
+
+      for (const s of sales) {
+        const d = s.createdAt;
+        let key: string;
+        let label: string;
+        if (groupBy === "month") {
+          key = monthKey(d);
+          const dt = new Intl.DateTimeFormat("fa-IR", {
+            month: "long",
+            year: "numeric",
+          }).format(d);
+          label = dt;
+        } else if (groupBy === "week") {
+          const ws = weekStart(d);
+          key = dayKey(ws);
+          const dt = new Intl.DateTimeFormat("fa-IR", {
+            day: "numeric",
+            month: "short",
+          }).format(ws);
+          label = dt;
+        } else {
+          key = dayKey(d);
+          const dt = new Intl.DateTimeFormat("fa-IR", {
+            day: "numeric",
+            month: "short",
+          }).format(d);
+          label = dt;
+        }
+        const b = ensureBucket(key, label);
+        b.total += s.total;
+        b.count += 1;
       }
-      return bucketMap.get(key)!;
-    };
 
-    for (const s of sales) {
-      const d = s.createdAt;
-      let key: string;
-      let label: string;
-      if (groupBy === "month") {
-        key = monthKey(d);
-        const dt = new Intl.DateTimeFormat("fa-IR", {
-          month: "long",
-          year: "numeric",
-        }).format(d);
-        label = dt;
-      } else if (groupBy === "week") {
-        const ws = weekStart(d);
-        key = dayKey(ws);
-        const dt = new Intl.DateTimeFormat("fa-IR", {
-          day: "numeric",
-          month: "short",
-        }).format(ws);
-        label = dt;
+      // Fill empty day buckets between from and to for "day" grouping
+      const series: Bucket[] = [];
+      if (groupBy === "day") {
+        const cursor = new Date(from);
+        while (cursor <= to) {
+          const key = dayKey(cursor);
+          const label = new Intl.DateTimeFormat("fa-IR", {
+            day: "numeric",
+            month: "short",
+          }).format(cursor);
+          const b = bucketMap.get(key);
+          series.push({
+            key,
+            label,
+            total: b?.total || 0,
+            count: b?.count || 0,
+          });
+          cursor.setDate(cursor.getDate() + 1);
+        }
       } else {
-        key = dayKey(d);
-        const dt = new Intl.DateTimeFormat("fa-IR", {
-          day: "numeric",
-          month: "short",
-        }).format(d);
-        label = dt;
+        // Sort by key ascending for week/month
+        const sorted = Array.from(bucketMap.values()).sort((a, b) =>
+          a.key < b.key ? -1 : a.key > b.key ? 1 : 0
+        );
+        series.push(...sorted);
       }
-      const b = ensureBucket(key, label);
-      b.total += s.total;
-      b.count += 1;
-    }
 
-    // Fill empty day buckets between from and to for "day" grouping
-    const series: Bucket[] = [];
-    if (groupBy === "day") {
-      const cursor = new Date(from);
-      while (cursor <= to) {
-        const key = dayKey(cursor);
-        const label = new Intl.DateTimeFormat("fa-IR", {
-          day: "numeric",
-          month: "short",
-        }).format(cursor);
-        const b = bucketMap.get(key);
-        series.push({
-          key,
-          label,
-          total: b?.total || 0,
-          count: b?.count || 0,
-        });
-        cursor.setDate(cursor.getDate() + 1);
+      // ---- Sales by payment method ----
+      const paymentMap = new Map<string, { total: number; count: number }>();
+      for (const s of sales) {
+        const entry =
+          paymentMap.get(s.paymentMethod) || { total: 0, count: 0 };
+        entry.total += s.total;
+        entry.count += 1;
+        paymentMap.set(s.paymentMethod, entry);
       }
-    } else {
-      // Sort by key ascending for week/month
-      const sorted = Array.from(bucketMap.values()).sort((a, b) =>
-        a.key < b.key ? -1 : a.key > b.key ? 1 : 0
+      const byPaymentMethod = Array.from(paymentMap.entries()).map(
+        ([method, v]) => ({ method, total: v.total, count: v.count })
       );
-      series.push(...sorted);
+
+      // ---- Sales by branch ----
+      const branchMap = new Map<string, { total: number; count: number }>();
+      for (const s of sales) {
+        const entry = branchMap.get(s.branchId) || { total: 0, count: 0 };
+        entry.total += s.total;
+        entry.count += 1;
+        branchMap.set(s.branchId, entry);
+      }
+      const branchIds = Array.from(branchMap.keys());
+      const branches = branchIds.length
+        ? await db.branch.findMany({
+            where: { id: { in: branchIds } },
+            select: { id: true, name: true },
+          })
+        : [];
+      const branchName = (id: string) =>
+        branches.find((b) => b.id === id)?.name || "نامشخص";
+      const byBranch = Array.from(branchMap.entries()).map(([branchId, v]) => ({
+        branchId,
+        branchName: branchName(branchId),
+        total: v.total,
+        count: v.count,
+      }));
+
+      // ---- Sales by hour of day (0..23) ----
+      const hourBuckets = Array.from({ length: 24 }, (_, h) => ({
+        hour: h,
+        total: 0,
+        count: 0,
+      }));
+      for (const s of sales) {
+        const h = s.createdAt.getHours();
+        hourBuckets[h].total += s.total;
+        hourBuckets[h].count += 1;
+      }
+
+      // ---- Top 10 products ----
+      const topProductsRaw = await db.saleItem.groupBy({
+        by: ["productId", "name"],
+        where: {
+          sale: { tenantId, createdAt: { gte: from, lte: to }, status: "completed" },
+        },
+        _sum: { total: true, quantity: true },
+        _count: { id: true },
+        orderBy: { _sum: { total: "desc" } },
+        take: 10,
+      });
+      const topProducts = topProductsRaw.map((p) => ({
+        productId: p.productId,
+        name: p.name,
+        revenue: p._sum.total || 0,
+        quantity: p._sum.quantity || 0,
+        salesCount: p._count.id,
+      }));
+
+      return NextResponse.json({
+        range: { from: from.toISOString(), to: to.toISOString(), groupBy },
+        summary: {
+          totalSales,
+          totalSubtotal,
+          totalDiscount,
+          totalMaking,
+          count,
+          avgOrderValue,
+        },
+        series: series.map((b) => ({
+          label: b.label,
+          key: b.key,
+          total: b.total,
+          count: b.count,
+        })),
+        byPaymentMethod,
+        byBranch,
+        byHour: hourBuckets,
+        topProducts,
+      });
+    } catch (dbError) {
+      console.error("Reports sales DB error, using demo:", dbError);
+      return NextResponse.json(getDemoSalesReport(from, to, groupBy));
     }
-
-    // ---- Sales by payment method ----
-    const paymentMap = new Map<string, { total: number; count: number }>();
-    for (const s of sales) {
-      const entry =
-        paymentMap.get(s.paymentMethod) || { total: 0, count: 0 };
-      entry.total += s.total;
-      entry.count += 1;
-      paymentMap.set(s.paymentMethod, entry);
-    }
-    const byPaymentMethod = Array.from(paymentMap.entries()).map(
-      ([method, v]) => ({ method, total: v.total, count: v.count })
-    );
-
-    // ---- Sales by branch ----
-    const branchMap = new Map<string, { total: number; count: number }>();
-    for (const s of sales) {
-      const entry = branchMap.get(s.branchId) || { total: 0, count: 0 };
-      entry.total += s.total;
-      entry.count += 1;
-      branchMap.set(s.branchId, entry);
-    }
-    const branchIds = Array.from(branchMap.keys());
-    const branches = branchIds.length
-      ? await db.branch.findMany({
-          where: { id: { in: branchIds } },
-          select: { id: true, name: true },
-        })
-      : [];
-    const branchName = (id: string) =>
-      branches.find((b) => b.id === id)?.name || "نامشخص";
-    const byBranch = Array.from(branchMap.entries()).map(([branchId, v]) => ({
-      branchId,
-      branchName: branchName(branchId),
-      total: v.total,
-      count: v.count,
-    }));
-
-    // ---- Sales by hour of day (0..23) ----
-    const hourBuckets = Array.from({ length: 24 }, (_, h) => ({
-      hour: h,
-      total: 0,
-      count: 0,
-    }));
-    for (const s of sales) {
-      const h = s.createdAt.getHours();
-      hourBuckets[h].total += s.total;
-      hourBuckets[h].count += 1;
-    }
-
-    // ---- Top 10 products ----
-    const topProductsRaw = await db.saleItem.groupBy({
-      by: ["productId", "name"],
-      where: {
-        sale: { tenantId, createdAt: { gte: from, lte: to }, status: "completed" },
-      },
-      _sum: { total: true, quantity: true },
-      _count: { id: true },
-      orderBy: { _sum: { total: "desc" } },
-      take: 10,
-    });
-    const topProducts = topProductsRaw.map((p) => ({
-      productId: p.productId,
-      name: p.name,
-      revenue: p._sum.total || 0,
-      quantity: p._sum.quantity || 0,
-      salesCount: p._count.id,
-    }));
-
-    return NextResponse.json({
-      range: { from: from.toISOString(), to: to.toISOString(), groupBy },
-      summary: {
-        totalSales,
-        totalSubtotal,
-        totalDiscount,
-        totalMaking,
-        count,
-        avgOrderValue,
-      },
-      series: series.map((b) => ({
-        label: b.label,
-        key: b.key,
-        total: b.total,
-        count: b.count,
-      })),
-      byPaymentMethod,
-      byBranch,
-      byHour: hourBuckets,
-      topProducts,
-    });
   } catch (error) {
     console.error("Reports sales API error:", error);
     return NextResponse.json(
@@ -254,4 +266,135 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo sales report data for when database is not available (Vercel)
+ */
+function getDemoSalesReport(from: Date, to: Date, groupBy: GroupBy) {
+  const sales = DEMO_SALES.filter(
+    (s) => s.createdAt >= from && s.createdAt <= to && s.status === "completed"
+  );
+
+  const totalSales = sales.reduce((s, x) => s + x.total, 0);
+  const totalSubtotal = sales.reduce((s, x) => s + x.subtotal, 0);
+  const totalDiscount = sales.reduce((s, x) => s + x.discount, 0);
+  const totalMaking = sales.reduce((s, x) => s + ((x as any).makingTotal || 0), 0);
+  const count = sales.length;
+  const avgOrderValue = count > 0 ? totalSales / count : 0;
+
+  type Bucket = { label: string; key: string; total: number; count: number };
+  const bucketMap = new Map<string, Bucket>();
+  const ensureBucket = (key: string, label: string) => {
+    if (!bucketMap.has(key)) {
+      bucketMap.set(key, { label, key, total: 0, count: 0 });
+    }
+    return bucketMap.get(key)!;
+  };
+
+  for (const s of sales) {
+    const d = s.createdAt;
+    let key: string;
+    let label: string;
+    if (groupBy === "month") {
+      key = monthKey(d);
+      label = new Intl.DateTimeFormat("fa-IR", { month: "long", year: "numeric" }).format(d);
+    } else if (groupBy === "week") {
+      const ws = weekStart(d);
+      key = dayKey(ws);
+      label = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" }).format(ws);
+    } else {
+      key = dayKey(d);
+      label = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" }).format(d);
+    }
+    const b = ensureBucket(key, label);
+    b.total += s.total;
+    b.count += 1;
+  }
+
+  const series: Bucket[] = [];
+  if (groupBy === "day") {
+    const cursor = new Date(from);
+    while (cursor <= to) {
+      const key = dayKey(cursor);
+      const label = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "short" }).format(cursor);
+      const b = bucketMap.get(key);
+      series.push({ key, label, total: b?.total || 0, count: b?.count || 0 });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  } else {
+    const sorted = Array.from(bucketMap.values()).sort((a, b) =>
+      a.key < b.key ? -1 : a.key > b.key ? 1 : 0
+    );
+    series.push(...sorted);
+  }
+
+  const paymentMap = new Map<string, { total: number; count: number }>();
+  for (const s of sales) {
+    const entry = paymentMap.get(s.paymentMethod) || { total: 0, count: 0 };
+    entry.total += s.total;
+    entry.count += 1;
+    paymentMap.set(s.paymentMethod, entry);
+  }
+  const byPaymentMethod = Array.from(paymentMap.entries()).map(
+    ([method, v]) => ({ method, total: v.total, count: v.count })
+  );
+
+  const branchMap = new Map<string, { total: number; count: number }>();
+  for (const s of sales) {
+    const entry = branchMap.get(s.branchId) || { total: 0, count: 0 };
+    entry.total += s.total;
+    entry.count += 1;
+    branchMap.set(s.branchId, entry);
+  }
+  const byBranch = Array.from(branchMap.entries()).map(([branchId, v]) => ({
+    branchId,
+    branchName: DEMO_BRANCHES.find((b) => b.id === branchId)?.name || "نامشخص",
+    total: v.total,
+    count: v.count,
+  }));
+
+  const hourBuckets = Array.from({ length: 24 }, (_, h) => ({
+    hour: h,
+    total: 0,
+    count: 0,
+  }));
+  for (const s of sales) {
+    const h = s.createdAt.getHours();
+    hourBuckets[h].total += s.total;
+    hourBuckets[h].count += 1;
+  }
+
+  // Top products from sale items
+  const productMap = new Map<string, { name: string; revenue: number; quantity: number; salesCount: number }>();
+  for (const s of sales) {
+    for (const item of s.items) {
+      const entry = productMap.get(item.productId) || { name: item.name, revenue: 0, quantity: 0, salesCount: 0 };
+      entry.revenue += item.total;
+      entry.quantity += item.quantity;
+      entry.salesCount += 1;
+      productMap.set(item.productId, entry);
+    }
+  }
+  const topProducts = Array.from(productMap.entries())
+    .map(([productId, v]) => ({ productId, ...v }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 10);
+
+  return {
+    range: { from: from.toISOString(), to: to.toISOString(), groupBy },
+    summary: {
+      totalSales,
+      totalSubtotal,
+      totalDiscount,
+      totalMaking,
+      count,
+      avgOrderValue,
+    },
+    series: series.map((b) => ({ label: b.label, key: b.key, total: b.total, count: b.count })),
+    byPaymentMethod,
+    byBranch,
+    byHour: hourBuckets,
+    topProducts,
+  };
 }

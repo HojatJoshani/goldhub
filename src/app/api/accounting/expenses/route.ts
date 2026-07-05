@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
+import { DEMO_EXPENSES, DEMO_BRANCHES } from "@/lib/demo-data";
 
 const VALID_CATEGORIES = [
   "rent",
@@ -34,68 +36,78 @@ export async function GET(req: NextRequest) {
       200
     );
 
-    const where: {
-      tenantId: string;
-      category?: string;
-      branchId?: string;
-      date?: { gte?: Date; lte?: Date };
-    } = { tenantId };
-    if (category) where.category = category;
-    if (branchId) where.branchId = branchId;
-    if (startDate || endDate) {
-      where.date = {};
-      if (startDate) where.date.gte = new Date(startDate);
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        where.date.lte = end;
-      }
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoExpenses(category, branchId, startDate, endDate, page, pageSize));
     }
 
-    const [items, total] = await Promise.all([
-      db.expense.findMany({
+    try {
+      const where: {
+        tenantId: string;
+        category?: string;
+        branchId?: string;
+        date?: { gte?: Date; lte?: Date };
+      } = { tenantId };
+      if (category) where.category = category;
+      if (branchId) where.branchId = branchId;
+      if (startDate || endDate) {
+        where.date = {};
+        if (startDate) where.date.gte = new Date(startDate);
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          where.date.lte = end;
+        }
+      }
+
+      const [items, total] = await Promise.all([
+        db.expense.findMany({
+          where,
+          orderBy: { date: "desc" },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        db.expense.count({ where }),
+      ]);
+
+      const totalAmount = await db.expense.aggregate({
         where,
-        orderBy: { date: "desc" },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      db.expense.count({ where }),
-    ]);
+        _sum: { amount: true },
+      });
 
-    const totalAmount = await db.expense.aggregate({
-      where,
-      _sum: { amount: true },
-    });
+      // Manually resolve branches (Expense has no Prisma relation to Branch)
+      const branchIds = Array.from(
+        new Set(items.map((e) => e.branchId).filter(Boolean) as string[])
+      );
+      const branches =
+        branchIds.length > 0
+          ? await db.branch.findMany({
+              where: { id: { in: branchIds } },
+              select: { id: true, name: true },
+            })
+          : [];
+      const branchMap = new Map(branches.map((b) => [b.id, b]));
 
-    // Manually resolve branches (Expense has no Prisma relation to Branch)
-    const branchIds = Array.from(
-      new Set(items.map((e) => e.branchId).filter(Boolean) as string[])
-    );
-    const branches =
-      branchIds.length > 0
-        ? await db.branch.findMany({
-            where: { id: { in: branchIds } },
-            select: { id: true, name: true },
-          })
-        : [];
-    const branchMap = new Map(branches.map((b) => [b.id, b]));
-
-    return NextResponse.json({
-      items: items.map((e) => ({
-        id: e.id,
-        category: e.category,
-        description: e.description,
-        amount: e.amount,
-        date: e.date,
-        branchId: e.branchId,
-        branch: e.branchId ? branchMap.get(e.branchId) || null : null,
-        createdAt: e.createdAt,
-      })),
-      total,
-      page,
-      pageSize,
-      totalAmount: totalAmount._sum.amount || 0,
-    });
+      return NextResponse.json({
+        items: items.map((e) => ({
+          id: e.id,
+          category: e.category,
+          description: e.description,
+          amount: e.amount,
+          date: e.date,
+          branchId: e.branchId,
+          branch: e.branchId ? branchMap.get(e.branchId) || null : null,
+          createdAt: e.createdAt,
+        })),
+        total,
+        page,
+        pageSize,
+        totalAmount: totalAmount._sum.amount || 0,
+      });
+    } catch (dbError) {
+      console.error("Expenses DB error, using demo:", dbError);
+      return NextResponse.json(getDemoExpenses(category, branchId, startDate, endDate, page, pageSize));
+    }
   } catch (error) {
     console.error("Expenses GET API error:", error);
     return NextResponse.json(
@@ -103,6 +115,48 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo expenses data for when database is not available (Vercel)
+ */
+function getDemoExpenses(
+  category: string,
+  branchId: string,
+  startDate: string,
+  endDate: string,
+  page: number,
+  pageSize: number
+) {
+  let items = [...DEMO_EXPENSES];
+  if (category) items = items.filter((e) => e.category === category);
+  if (branchId) items = items.filter((e) => e.branchId === branchId);
+  if (startDate) {
+    const sd = new Date(startDate);
+    items = items.filter((e) => e.date >= sd);
+  }
+  if (endDate) {
+    const ed = new Date(endDate);
+    ed.setHours(23, 59, 59, 999);
+    items = items.filter((e) => e.date <= ed);
+  }
+
+  const total = items.length;
+  const paged = items.slice((page - 1) * pageSize, page * pageSize);
+  const totalAmount = items.reduce((s, e) => s + e.amount, 0);
+
+  return {
+    items: paged.map((e) => ({
+      ...e,
+      branch: e.branchId
+        ? { id: e.branchId, name: DEMO_BRANCHES.find((b) => b.id === e.branchId)?.name || "شعبه" }
+        : null,
+    })),
+    total,
+    page,
+    pageSize,
+    totalAmount,
+  };
 }
 
 /** POST /api/accounting/expenses — create a new expense */

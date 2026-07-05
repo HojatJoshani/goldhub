@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
 
 interface TransferItemInput {
   productId: string;
@@ -31,45 +32,55 @@ export async function GET(req: NextRequest) {
     const where: { tenantId: string; status?: string } = { tenantId };
     if (status) where.status = status;
 
-    const [items, total] = await Promise.all([
-      db.transfer.findMany({
-        where,
-        include: {
-          fromBranch: { select: { id: true, name: true, code: true } },
-          toBranch: { select: { id: true, name: true, code: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      db.transfer.count({ where }),
-    ]);
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoTransfers(page, pageSize));
+    }
 
-    return NextResponse.json({
-      items: items.map((t) => {
-        let parsedItems: TransferItemInput[] = [];
-        try {
-          parsedItems = JSON.parse(t.itemsJson || "[]") as TransferItemInput[];
-        } catch {
-          parsedItems = [];
-        }
-        return {
-          id: t.id,
-          reference: t.reference,
-          status: t.status,
-          notes: t.notes,
-          items: parsedItems,
-          itemsCount: parsedItems.reduce((s, i) => s + (i.qty || 0), 0),
-          fromBranch: t.fromBranch,
-          toBranch: t.toBranch,
-          createdAt: t.createdAt,
-          updatedAt: t.updatedAt,
-        };
-      }),
-      total,
-      page,
-      pageSize,
-    });
+    try {
+      const [items, total] = await Promise.all([
+        db.transfer.findMany({
+          where,
+          include: {
+            fromBranch: { select: { id: true, name: true, code: true } },
+            toBranch: { select: { id: true, name: true, code: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        db.transfer.count({ where }),
+      ]);
+
+      return NextResponse.json({
+        items: items.map((t) => {
+          let parsedItems: TransferItemInput[] = [];
+          try {
+            parsedItems = JSON.parse(t.itemsJson || "[]") as TransferItemInput[];
+          } catch {
+            parsedItems = [];
+          }
+          return {
+            id: t.id,
+            reference: t.reference,
+            status: t.status,
+            notes: t.notes,
+            items: parsedItems,
+            itemsCount: parsedItems.reduce((s, i) => s + (i.qty || 0), 0),
+            fromBranch: t.fromBranch,
+            toBranch: t.toBranch,
+            createdAt: t.createdAt,
+            updatedAt: t.updatedAt,
+          };
+        }),
+        total,
+        page,
+        pageSize,
+      });
+    } catch (dbError) {
+      console.error("Transfers DB error, using demo:", dbError);
+      return NextResponse.json(getDemoTransfers(page, pageSize));
+    }
   } catch (error) {
     console.error("Transfers GET API error:", error);
     return NextResponse.json(
@@ -77,6 +88,19 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo transfers data for when database is not available (Vercel)
+ */
+function getDemoTransfers(page: number, pageSize: number) {
+  // Transfers are empty in demo
+  return {
+    items: [],
+    total: 0,
+    page,
+    pageSize,
+  };
 }
 
 /** POST /api/transfers — create a new transfer */

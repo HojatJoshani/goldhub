@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
+import { DEMO_PRODUCTS, DEMO_CATEGORIES, DEMO_BRANCHES } from "@/lib/demo-data";
 import type { Prisma } from "@prisma/client";
 
 const VALID_KARATS = ["999", "916", "750", "585", "417", "375"];
@@ -67,120 +69,130 @@ export async function GET(req: NextRequest) {
 
     void VALID_SORTS; // referenced for documentation; sort validated below
 
-    // Marketplace shows only active products that are in stock
-    const where: Prisma.ProductWhereInput = {
-      tenantId,
-      status: "active",
-      stock: { gt: 0 },
-    };
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { barcode: { contains: search } },
-        { sku: { contains: search } },
-        { description: { contains: search } },
-      ];
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoMarketplace(search, categoryId, karat, branchId, sort, minPrice, maxPrice, minWeight, maxWeight, page, pageSize));
     }
-    if (categoryId) where.categoryId = categoryId;
-    if (karat && VALID_KARATS.includes(karat)) where.karat = karat;
-    if (branchId) where.branchId = branchId;
 
-    // Price range filter
-    const salePriceFilter: { gte?: number; lte?: number } = {};
-    if (minPrice !== null && !isNaN(minPrice)) salePriceFilter.gte = minPrice;
-    if (maxPrice !== null && !isNaN(maxPrice)) salePriceFilter.lte = maxPrice;
-    if (Object.keys(salePriceFilter).length > 0)
-      where.salePrice = salePriceFilter;
+    try {
+      // Marketplace shows only active products that are in stock
+      const where: Prisma.ProductWhereInput = {
+        tenantId,
+        status: "active",
+        stock: { gt: 0 },
+      };
 
-    // Weight range filter
-    const weightFilter: { gte?: number; lte?: number } = {};
-    if (minWeight !== null && !isNaN(minWeight)) weightFilter.gte = minWeight;
-    if (maxWeight !== null && !isNaN(maxWeight)) weightFilter.lte = maxWeight;
-    if (Object.keys(weightFilter).length > 0) where.weight = weightFilter;
+      if (search) {
+        where.OR = [
+          { name: { contains: search } },
+          { barcode: { contains: search } },
+          { sku: { contains: search } },
+          { description: { contains: search } },
+        ];
+      }
+      if (categoryId) where.categoryId = categoryId;
+      if (karat && VALID_KARATS.includes(karat)) where.karat = karat;
+      if (branchId) where.branchId = branchId;
 
-    // Determine sort order. `popular` is approximated using simulated review
-    // counts which are derived in JS — so we fetch then re-sort in JS.
-    const orderBy: Prisma.ProductOrderByWithRelationInput[] =
-      sort === "price_asc"
-        ? [{ salePrice: "asc" }]
-        : sort === "price_desc"
-          ? [{ salePrice: "desc" }]
-          : sort === "popular"
-            ? [{ salePrice: "desc" }] // placeholder, re-sorted in JS
-            : [{ createdAt: "desc" }];
+      // Price range filter
+      const salePriceFilter: { gte?: number; lte?: number } = {};
+      if (minPrice !== null && !isNaN(minPrice)) salePriceFilter.gte = minPrice;
+      if (maxPrice !== null && !isNaN(maxPrice)) salePriceFilter.lte = maxPrice;
+      if (Object.keys(salePriceFilter).length > 0)
+        where.salePrice = salePriceFilter;
 
-    const [total, rawItems, categories, branches] = await Promise.all([
-      db.product.count({ where }),
-      db.product.findMany({
-        where,
-        include: { category: true, branch: true },
-        orderBy,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      db.category.findMany({
-        where: { tenantId },
+      // Weight range filter
+      const weightFilter: { gte?: number; lte?: number } = {};
+      if (minWeight !== null && !isNaN(minWeight)) weightFilter.gte = minWeight;
+      if (maxWeight !== null && !isNaN(maxWeight)) weightFilter.lte = maxWeight;
+      if (Object.keys(weightFilter).length > 0) where.weight = weightFilter;
+
+      // Determine sort order. `popular` is approximated using simulated review
+      // counts which are derived in JS — so we fetch then re-sort in JS.
+      const orderBy: Prisma.ProductOrderByWithRelationInput[] =
+        sort === "price_asc"
+          ? [{ salePrice: "asc" }]
+          : sort === "price_desc"
+            ? [{ salePrice: "desc" }]
+            : sort === "popular"
+              ? [{ salePrice: "desc" }] // placeholder, re-sorted in JS
+              : [{ createdAt: "desc" }];
+
+      const [total, rawItems, categories, branches] = await Promise.all([
+        db.product.count({ where }),
+        db.product.findMany({
+          where,
+          include: { category: true, branch: true },
+          orderBy,
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        db.category.findMany({
+          where: { tenantId },
+          include: { _count: { select: { products: { where } } } },
+          orderBy: { name: "asc" },
+        }),
+        db.branch.findMany({
+          where: { tenantId, status: "active" },
+          orderBy: { name: "asc" },
+        }),
+      ]);
+
+      // Compute product counts per branch (active+in stock only) for store cards
+      const branchCounts = await db.branch.findMany({
+        where: { tenantId, status: "active" },
         include: { _count: { select: { products: { where } } } },
         orderBy: { name: "asc" },
-      }),
-      db.branch.findMany({
-        where: { tenantId, status: "active" },
-        orderBy: { name: "asc" },
-      }),
-    ]);
-
-    // Compute product counts per branch (active+in stock only) for store cards
-    const branchCounts = await db.branch.findMany({
-      where: { tenantId, status: "active" },
-      include: { _count: { select: { products: { where } } } },
-      orderBy: { name: "asc" },
-    });
-
-    // Re-sort by "popularity" (simulated reviewCount desc, then rating desc)
-    let items = rawItems;
-    if (sort === "popular") {
-      items = [...rawItems].sort((a, b) => {
-        const ra = simulatedReviewCount(a.id);
-        const rb = simulatedReviewCount(b.id);
-        if (rb !== ra) return rb - ra;
-        return simulatedRating(b.id) - simulatedRating(a.id);
       });
+
+      // Re-sort by "popularity" (simulated reviewCount desc, then rating desc)
+      let items = rawItems;
+      if (sort === "popular") {
+        items = [...rawItems].sort((a, b) => {
+          const ra = simulatedReviewCount(a.id);
+          const rb = simulatedReviewCount(b.id);
+          if (rb !== ra) return rb - ra;
+          return simulatedRating(b.id) - simulatedRating(a.id);
+        });
+      }
+
+      // Annotate each product with simulated marketplace fields
+      const enriched = items.map((p) => ({
+        ...p,
+        rating: simulatedRating(p.id),
+        reviewCount: simulatedReviewCount(p.id),
+      }));
+
+      const stores = branchCounts.map((b) => ({
+        id: b.id,
+        name: b.name,
+        code: b.code,
+        isMain: b.isMain,
+        productCount: b._count.products,
+        // store rating also simulated, seeded by branch id
+        rating: Math.round((4.2 + seededRandom("store:" + b.id) * 0.8) * 10) / 10,
+      }));
+
+      // branches is currently unused beyond being fetched; keep for future use
+      void branches;
+
+      return NextResponse.json({
+        items: enriched,
+        total,
+        page,
+        pageSize,
+        stores,
+        categories: categories.map((c) => ({
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          productCount: c._count.products,
+        })),
+      });
+    } catch (dbError) {
+      console.error("Marketplace DB error, using demo:", dbError);
+      return NextResponse.json(getDemoMarketplace(search, categoryId, karat, branchId, sort, minPrice, maxPrice, minWeight, maxWeight, page, pageSize));
     }
-
-    // Annotate each product with simulated marketplace fields
-    const enriched = items.map((p) => ({
-      ...p,
-      rating: simulatedRating(p.id),
-      reviewCount: simulatedReviewCount(p.id),
-    }));
-
-    const stores = branchCounts.map((b) => ({
-      id: b.id,
-      name: b.name,
-      code: b.code,
-      isMain: b.isMain,
-      productCount: b._count.products,
-      // store rating also simulated, seeded by branch id
-      rating: Math.round((4.2 + seededRandom("store:" + b.id) * 0.8) * 10) / 10,
-    }));
-
-    // branches is currently unused beyond being fetched; keep for future use
-    void branches;
-
-    return NextResponse.json({
-      items: enriched,
-      total,
-      page,
-      pageSize,
-      stores,
-      categories: categories.map((c) => ({
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-        productCount: c._count.products,
-      })),
-    });
   } catch (error) {
     console.error("Marketplace GET error:", error);
     return NextResponse.json(
@@ -188,4 +200,93 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo marketplace data for when database is not available (Vercel)
+ */
+function getDemoMarketplace(
+  search: string,
+  categoryId: string | undefined,
+  karat: string | undefined,
+  branchId: string | undefined,
+  sort: string,
+  minPrice: number | null,
+  maxPrice: number | null,
+  minWeight: number | null,
+  maxWeight: number | null,
+  page: number,
+  pageSize: number
+) {
+  let items = DEMO_PRODUCTS.filter((p) => p.status === "active" && p.stock > 0);
+
+  if (search) {
+    const q = search.toLowerCase();
+    items = items.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.barcode && p.barcode.includes(q)) ||
+        p.sku.toLowerCase().includes(q) ||
+        (p.description && p.description.toLowerCase().includes(q))
+    );
+  }
+  if (categoryId) items = items.filter((p) => p.categoryId === categoryId);
+  if (karat && VALID_KARATS.includes(karat)) items = items.filter((p) => p.karat === karat);
+  if (branchId) items = items.filter((p) => p.branchId === branchId);
+
+  if (minPrice !== null && !isNaN(minPrice))
+    items = items.filter((p) => p.salePrice >= minPrice);
+  if (maxPrice !== null && !isNaN(maxPrice))
+    items = items.filter((p) => p.salePrice <= maxPrice);
+  if (minWeight !== null && !isNaN(minWeight))
+    items = items.filter((p) => p.weight >= minWeight);
+  if (maxWeight !== null && !isNaN(maxWeight))
+    items = items.filter((p) => p.weight <= maxWeight);
+
+  // Sort
+  if (sort === "price_asc") {
+    items.sort((a, b) => a.salePrice - b.salePrice);
+  } else if (sort === "price_desc") {
+    items.sort((a, b) => b.salePrice - a.salePrice);
+  } else if (sort === "popular") {
+    items.sort((a, b) => simulatedReviewCount(b.id) - simulatedReviewCount(a.id));
+  } else {
+    // newest — keep original order
+  }
+
+  const total = items.length;
+  const paged = items.slice((page - 1) * pageSize, page * pageSize);
+
+  const enriched = paged.map((p) => ({
+    ...p,
+    rating: simulatedRating(p.id),
+    reviewCount: simulatedReviewCount(p.id),
+  }));
+
+  // Stores from demo branches
+  const stores = DEMO_BRANCHES.filter((b) => b.status === "active" && !b.isWarehouse).map((b) => ({
+    id: b.id,
+    name: b.name,
+    code: b.code,
+    isMain: b.isMain,
+    productCount: DEMO_PRODUCTS.filter((p) => p.branchId === b.id && p.status === "active" && p.stock > 0).length,
+    rating: Math.round((4.2 + seededRandom("store:" + b.id) * 0.8) * 10) / 10,
+  }));
+
+  // Categories with product counts
+  const categories = DEMO_CATEGORIES.map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    productCount: DEMO_PRODUCTS.filter((p) => p.categoryId === c.id && p.status === "active" && p.stock > 0).length,
+  }));
+
+  return {
+    items: enriched,
+    total,
+    page,
+    pageSize,
+    stores,
+    categories,
+  };
 }

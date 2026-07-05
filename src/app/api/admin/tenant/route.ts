@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
+import { DEMO_TENANT } from "@/lib/demo-data";
 
 const ADMIN_ROLES = ["admin", "super_admin"];
 
@@ -38,39 +40,49 @@ export async function GET(req: NextRequest) {
     }
     const tenantId = user.tenantId;
 
-    const tenant = await db.tenant.findUnique({
-      where: { id: tenantId },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        plan: true,
-        status: true,
-        settings: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    if (!tenant) {
-      return NextResponse.json(
-        { error: "سازمان یافت نشد" },
-        { status: 404 }
-      );
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoTenant());
     }
 
-    const settings = parseSettings(tenant.settings);
+    try {
+      const tenant = await db.tenant.findUnique({
+        where: { id: tenantId },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          plan: true,
+          status: true,
+          settings: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
 
-    return NextResponse.json({
-      id: tenant.id,
-      name: tenant.name,
-      slug: tenant.slug,
-      plan: tenant.plan,
-      status: tenant.status,
-      settings,
-      createdAt: tenant.createdAt,
-      updatedAt: tenant.updatedAt,
-    });
+      if (!tenant) {
+        return NextResponse.json(
+          { error: "سازمان یافت نشد" },
+          { status: 404 }
+        );
+      }
+
+      const settings = parseSettings(tenant.settings);
+
+      return NextResponse.json({
+        id: tenant.id,
+        name: tenant.name,
+        slug: tenant.slug,
+        plan: tenant.plan,
+        status: tenant.status,
+        settings,
+        createdAt: tenant.createdAt,
+        updatedAt: tenant.updatedAt,
+      });
+    } catch (dbError) {
+      console.error("Admin tenant DB error, using demo:", dbError);
+      return NextResponse.json(getDemoTenant());
+    }
   } catch (err) {
     console.error("[GET /api/admin/tenant] error:", err);
     return NextResponse.json(
@@ -78,6 +90,22 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo tenant data for when database is not available (Vercel)
+ */
+function getDemoTenant() {
+  return {
+    id: DEMO_TENANT.id,
+    name: DEMO_TENANT.name,
+    slug: DEMO_TENANT.slug,
+    plan: DEMO_TENANT.plan,
+    status: DEMO_TENANT.status,
+    settings: parseSettings(DEMO_TENANT.settings),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
 }
 
 export async function PUT(req: NextRequest) {

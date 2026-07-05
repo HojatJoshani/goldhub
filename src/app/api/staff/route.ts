@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
+import { DEMO_USERS } from "@/lib/demo-data";
 
 /**
  * GET /api/staff
@@ -18,18 +20,28 @@ export async function GET(req: NextRequest) {
     }
     const tenantId = user.tenantId;
 
-    const staff = await db.user.findMany({
-      where: { tenantId, status: "active" },
-      select: {
-        id: true,
-        name: true,
-        role: true,
-        email: true,
-      },
-      orderBy: { name: "asc" },
-    });
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoStaff());
+    }
 
-    return NextResponse.json({ items: staff });
+    try {
+      const staff = await db.user.findMany({
+        where: { tenantId, status: "active" },
+        select: {
+          id: true,
+          name: true,
+          role: true,
+          email: true,
+        },
+        orderBy: { name: "asc" },
+      });
+
+      return NextResponse.json({ items: staff });
+    } catch (dbError) {
+      console.error("Staff DB error, using demo:", dbError);
+      return NextResponse.json(getDemoStaff());
+    }
   } catch (err) {
     console.error("[GET /api/staff] error:", err);
     return NextResponse.json(
@@ -37,4 +49,18 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo staff data for when database is not available (Vercel)
+ */
+function getDemoStaff() {
+  const items = DEMO_USERS.filter((u) => u.status === "active").map((u) => ({
+    id: u.id,
+    name: u.name,
+    role: u.role,
+    email: u.email,
+  }));
+  items.sort((a, b) => a.name.localeCompare(b.name, "fa"));
+  return { items };
 }

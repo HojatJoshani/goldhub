@@ -171,11 +171,11 @@ export function AppShell({ current, onNavigate, children }: AppShellProps) {
       {/* Main */}
       <div className="flex-1 lg:mr-60 xl:mr-64 flex flex-col min-h-screen w-full">
         {/* Topbar */}
-        <header className="h-14 sm:h-16 border-b bg-background/95 backdrop-blur sticky top-0 z-30 flex items-center px-3 sm:px-4 lg:px-6 gap-2 sm:gap-3 safe-top">
+        <header className="h-14 sm:h-16 border-b bg-background/95 backdrop-blur sticky top-0 z-30 flex items-center px-3 sm:px-4 lg:px-6 gap-1.5 sm:gap-2 lg:gap-3 safe-top overflow-x-auto scrollbar-hide">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden shrink-0"
+            className="lg:hidden shrink-0 h-9 w-9"
             onClick={() => setMobileOpen(true)}
             aria-label="منو"
           >
@@ -183,20 +183,20 @@ export function AppShell({ current, onNavigate, children }: AppShellProps) {
           </Button>
 
           {/* Breadcrumb - hidden on small mobile */}
-          <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground min-w-0">
-            <span className="hidden md:inline">گلد هاب</span>
+          <div className="hidden sm:flex items-center gap-2 text-xs lg:text-sm text-muted-foreground min-w-0 shrink-0">
+            <span className="hidden md:inline whitespace-nowrap">گلد هاب</span>
             <ChevronLeft className="hidden md:inline w-4 h-4 shrink-0" />
-            <span className="font-medium text-foreground truncate">{currentItem?.label}</span>
+            <span className="font-medium text-foreground truncate max-w-[120px] lg:max-w-[200px]">{currentItem?.label}</span>
           </div>
           {/* Mobile title - "گلد هاب" centered */}
           <div className="flex sm:hidden items-center justify-center min-w-0 flex-1">
             <span className="font-bold text-sm gold-text truncate">گلد هاب</span>
           </div>
 
-          <div className="flex-1 hidden sm:block" />
+          <div className="flex-1 hidden sm:block min-w-4" />
 
           {/* Search - desktop */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted/60 text-sm text-muted-foreground w-48 lg:w-64">
+          <div className="hidden md:flex items-center gap-2 px-2.5 lg:px-3 py-1.5 rounded-md bg-muted/60 text-xs lg:text-sm text-muted-foreground w-36 sm:w-44 lg:w-56 xl:w-64 shrink-0">
             <Search className="w-4 h-4 shrink-0" />
             <input
               placeholder="جستجو..."
@@ -208,7 +208,7 @@ export function AppShell({ current, onNavigate, children }: AppShellProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden shrink-0"
+            className="md:hidden shrink-0 h-9 w-9"
             onClick={() => setSearchOpen(!searchOpen)}
             aria-label="جستجو"
           >
@@ -222,7 +222,7 @@ export function AppShell({ current, onNavigate, children }: AppShellProps) {
               size="icon"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               title="تغییر تم"
-              className="shrink-0"
+              className="shrink-0 h-9 w-9"
             >
               {theme === "dark" ? (
                 <Sun className="w-5 h-5" />
@@ -233,7 +233,7 @@ export function AppShell({ current, onNavigate, children }: AppShellProps) {
           )}
 
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative shrink-0" aria-label="اعلان‌ها">
+          <Button variant="ghost" size="icon" className="relative shrink-0 h-9 w-9" aria-label="اعلان‌ها">
             <Bell className="w-5 h-5" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
           </Button>
@@ -241,8 +241,8 @@ export function AppShell({ current, onNavigate, children }: AppShellProps) {
           {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2 px-1 sm:px-2 shrink-0">
-                <Avatar className="w-8 h-8">
+              <Button variant="ghost" className="gap-1.5 sm:gap-2 px-1 sm:px-2 shrink-0 h-9">
+                <Avatar className="w-7 h-7 sm:w-8 sm:h-8">
                   <AvatarFallback className="bg-amber-200 text-amber-900 text-xs font-bold">
                     {user?.name?.charAt(0) || "U"}
                   </AvatarFallback>

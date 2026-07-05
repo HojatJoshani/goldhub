@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { isDbAvailable } from "@/lib/db-check";
 
 // مرجوعی کالا - Product Returns
 // Handles sale returns/refunds with stock restoration
@@ -16,46 +17,56 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const pageSize = parseInt(searchParams.get("pageSize") || "20");
 
-    // Get refunded sales (sales with status "refunded" or "void")
-    const [returns, total] = await Promise.all([
-      db.sale.findMany({
-        where: {
-          tenantId: user.tenantId,
-          status: { in: ["refunded", "void"] },
-        },
-        include: {
-          customer: { select: { name: true, phone: true } },
-          cashier: { select: { name: true } },
-          items: true,
-        },
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      db.sale.count({
-        where: {
-          tenantId: user.tenantId,
-          status: { in: ["refunded", "void"] },
-        },
-      }),
-    ]);
+    // Check if database is available
+    if (!(await isDbAvailable())) {
+      return NextResponse.json(getDemoReturns(page, pageSize));
+    }
 
-    // Summary stats
-    const totalRefundAmount = returns.reduce((s, r) => s + r.total, 0);
-    const totalRefundCount = total;
+    try {
+      // Get refunded sales (sales with status "refunded" or "void")
+      const [returns, total] = await Promise.all([
+        db.sale.findMany({
+          where: {
+            tenantId: user.tenantId,
+            status: { in: ["refunded", "void"] },
+          },
+          include: {
+            customer: { select: { name: true, phone: true } },
+            cashier: { select: { name: true } },
+            items: true,
+          },
+          orderBy: { createdAt: "desc" },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        db.sale.count({
+          where: {
+            tenantId: user.tenantId,
+            status: { in: ["refunded", "void"] },
+          },
+        }),
+      ]);
 
-    return NextResponse.json({
-      success: true,
-      items: returns,
-      total,
-      page,
-      pageSize,
-      stats: {
-        totalRefundAmount,
-        totalRefundCount,
-        avgRefundAmount: totalRefundCount > 0 ? totalRefundAmount / totalRefundCount : 0,
-      },
-    });
+      // Summary stats
+      const totalRefundAmount = returns.reduce((s, r) => s + r.total, 0);
+      const totalRefundCount = total;
+
+      return NextResponse.json({
+        success: true,
+        items: returns,
+        total,
+        page,
+        pageSize,
+        stats: {
+          totalRefundAmount,
+          totalRefundCount,
+          avgRefundAmount: totalRefundCount > 0 ? totalRefundAmount / totalRefundCount : 0,
+        },
+      });
+    } catch (dbError) {
+      console.error("Returns DB error, using demo:", dbError);
+      return NextResponse.json(getDemoReturns(page, pageSize));
+    }
   } catch (error) {
     console.error("Returns API error:", error);
     return NextResponse.json(
@@ -63,6 +74,25 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Demo returns data for when database is not available (Vercel)
+ */
+function getDemoReturns(page: number, pageSize: number) {
+  // Returns are empty in demo (no refunds in demo sales)
+  return {
+    success: true,
+    items: [],
+    total: 0,
+    page,
+    pageSize,
+    stats: {
+      totalRefundAmount: 0,
+      totalRefundCount: 0,
+      avgRefundAmount: 0,
+    },
+  };
 }
 
 export async function POST(req: NextRequest) {
