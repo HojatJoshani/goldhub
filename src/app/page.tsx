@@ -4,6 +4,7 @@ import * as React from "react";
 import { AuthProvider, useAuth } from "@/components/auth-provider";
 import { LoginPage } from "@/components/login-page";
 import { AppShell } from "@/components/app-shell";
+import { SplashScreen } from "@/components/splash-screen";
 import { DashboardModule } from "@/components/modules/dashboard";
 import { PosModule } from "@/components/modules/pos";
 import { InventoryModule } from "@/components/modules/inventory";
@@ -22,6 +23,24 @@ import type { ModuleKey } from "@/lib/navigation";
 function AppContent() {
   const { user, loading } = useAuth();
   const [module, setModule] = React.useState<ModuleKey>("dashboard");
+  const [showSplash, setShowSplash] = React.useState(true);
+
+  // Show splash on first load
+  React.useEffect(() => {
+    const seen = sessionStorage.getItem("gh-splash-seen");
+    if (seen === "true") {
+      setShowSplash(false);
+    }
+  }, []);
+
+  const handleSplashFinish = React.useCallback(() => {
+    sessionStorage.setItem("gh-splash-seen", "true");
+    setShowSplash(false);
+  }, []);
+
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
+  }
 
   if (loading) {
     return (
