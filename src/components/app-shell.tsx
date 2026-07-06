@@ -52,9 +52,15 @@ function SidebarContent({
   onNavClick?: () => void;
 }) {
   return (
-    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
-      {/* Logo */}
-      <div className="p-4 border-b border-sidebar-border safe-top">
+    <div
+      className="flex flex-col h-full bg-sidebar text-sidebar-foreground"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
+    >
+      {/* Logo - fixed height */}
+      <div className="p-4 border-b border-sidebar-border shrink-0">
         <div className="flex items-center gap-3">
           <GoldHubLogo className="w-9 h-9 shrink-0" />
           <div className="min-w-0 flex-1">
@@ -77,8 +83,14 @@ function SidebarContent({
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto p-2 space-y-0.5 scrollbar-thin">
+      {/* Nav - scrollable with min-h-0 for iOS */}
+      <nav
+        className="flex-1 min-h-0 overflow-y-auto p-2 space-y-0.5"
+        style={{
+          WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
+        }}
+      >
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = current === item.key;
@@ -107,8 +119,8 @@ function SidebarContent({
         })}
       </nav>
 
-      {/* User card */}
-      <div className="p-2 border-t border-sidebar-border safe-bottom">
+      {/* User card - fixed height */}
+      <div className="p-2 border-t border-sidebar-border shrink-0">
         <div className="flex items-center gap-2 p-2 rounded-lg bg-sidebar-accent/50">
           <Avatar className="w-9 h-9 shrink-0">
             <AvatarFallback className="bg-amber-200 text-amber-900 text-sm font-bold">
@@ -154,21 +166,32 @@ export function AppShell({ current, onNavigate, children }: AppShellProps) {
 
       {/* Mobile sidebar - Sheet drawer */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="right" className="w-[85vw] max-w-[300px] p-0">
-          <SidebarContent
-            current={current}
-            onNavigate={onNavigate}
-            user={user}
-            logout={logout}
-            onNavClick={() => setMobileOpen(false)}
-          />
+        <SheetContent
+          side="right"
+          className="w-[85vw] max-w-[300px] p-0 overflow-hidden"
+        >
+          <div className="h-full flex flex-col">
+            <SidebarContent
+              current={current}
+              onNavigate={onNavigate}
+              user={user}
+              logout={logout}
+              onNavClick={() => setMobileOpen(false)}
+            />
+          </div>
         </SheetContent>
       </Sheet>
 
       {/* Main content area */}
       <div className="flex-1 lg:mr-60 xl:mr-64 flex flex-col min-h-screen w-full min-w-0">
-        {/* Topbar - Clean and responsive */}
-        <header className="h-14 sm:h-16 border-b bg-background/95 backdrop-blur sticky top-0 z-30 safe-top">
+        {/* Topbar - sticky with proper iOS safe area */}
+        <header
+          className="h-14 sm:h-16 border-b bg-background/95 backdrop-blur sticky top-0 z-50"
+          style={{
+            paddingTop: "env(safe-area-inset-top)",
+            marginTop: "calc(env(safe-area-inset-top) * -1)",
+          }}
+        >
           <div className="h-full flex items-center px-2 sm:px-4 gap-1 sm:gap-2 max-w-full">
             {/* Menu button - mobile only */}
             <Button
@@ -260,40 +283,49 @@ export function AppShell({ current, onNavigate, children }: AppShellProps) {
           </div>
         </header>
 
-        {/* Content */}
-        <main className="flex-1 p-3 sm:p-4 lg:p-6 pb-20 lg:pb-6 w-full max-w-full overflow-x-hidden">
+        {/* Content - with padding for bottom nav on mobile */}
+        <main
+          className="flex-1 p-3 sm:p-4 lg:p-6 w-full max-w-full overflow-x-hidden"
+          style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}
+        >
           {children}
         </main>
 
-        {/* Footer */}
-        <footer className="mt-auto border-t py-3 sm:py-4 px-4 sm:px-6 text-center text-[11px] sm:text-xs text-muted-foreground safe-bottom">
+        {/* Footer - hidden on mobile (bottom nav replaces it) */}
+        <footer className="hidden lg:block mt-auto border-t py-4 px-6 text-center text-xs text-muted-foreground">
           © {toPersianDigits(1405)} گلد هاب - پلتفرم مدیریت طلا و جواهر · نسخه ۱.۰.۰
         </footer>
-
-        {/* Mobile bottom navigation - quick access to main modules */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t safe-bottom">
-          <div className="grid grid-cols-5 h-14">
-            {MOBILE_NAV.map((item) => {
-              const Icon = item.icon;
-              const isActive = current === item.key;
-              return (
-                <button
-                  key={item.key}
-                  onClick={() => onNavigate(item.key)}
-                  className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                    isActive
-                      ? "text-amber-600"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="text-[10px] truncate max-w-full px-1">{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
       </div>
+
+      {/* Mobile bottom navigation - fixed at bottom with safe area */}
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t"
+        style={{
+          paddingBottom: "env(safe-area-inset-bottom)",
+          height: "calc(3.5rem + env(safe-area-inset-bottom))",
+        }}
+      >
+        <div className="grid grid-cols-5 h-14">
+          {MOBILE_NAV.map((item) => {
+            const Icon = item.icon;
+            const isActive = current === item.key;
+            return (
+              <button
+                key={item.key}
+                onClick={() => onNavigate(item.key)}
+                className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${
+                  isActive
+                    ? "text-amber-600"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="text-[10px] truncate max-w-full px-1">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }
